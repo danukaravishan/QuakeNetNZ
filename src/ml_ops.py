@@ -25,7 +25,7 @@ def train(cfg):
 
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
-      print("Training DNN")
+      print("Training CNN")
       model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE)
       criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -45,13 +45,30 @@ def train(cfg):
 
    elif cfg.MODEL_TYPE == MODEL_TYPE.DNN:
       print("Training DNN")
+      model = DNN()
+      criterion = nn.CrossEntropyLoss()
+      optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+      for epoch in range(10):  # Example: 10 epochs.  We can increase this number to converge more
+         for batch_X, batch_y in dataloader:
+            optimizer.zero_grad()
+            output = model(batch_X)
+            loss = criterion(output, batch_y)
+            loss.backward()
+            optimizer.step()
+            print(f'Loss: {loss.item()}')
+         print(f'Epoch {epoch+1}, Loss: {loss.item()}')
+
+      # Save the model
+      torch.save(model.state_dict(), cfg.MODEL_FILE_NAME)      
       
 
 
 def predict(cfg): 
    print("Predicting for test set")
 
-   model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE)
+   #model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE)
+   model = DNN()
    model.load_state_dict(torch.load(cfg.MODEL_FILE_NAME))
    model.eval()
 
@@ -80,7 +97,7 @@ def predict(cfg):
    assert (predicted_classes.shape == true_tensor.shape)
 
    correct_predictions = (predicted_classes == true_tensor).sum().item() 
-   total_predictions = true_tensor.size(0)  #
+   total_predictions = true_tensor.size(0)
    accuracy = correct_predictions / total_predictions
    print(f"Prediction accuracy: {accuracy * 100:.2f}%")
 

@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 
 ## ML libraries
 from cnn import PWaveCNN
+from dnn import DNN
 from torch.utils.data import DataLoader, TensorDataset
 import torch
 import torch.nn as nn

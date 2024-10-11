@@ -21,12 +21,12 @@ class Config:
         #set program mode
         self.MODE               = MODE_TYPE.PREDICT
 
-        self.MODEL_TYPE         = MODEL_TYPE.CNN
+        self.MODEL_TYPE         = MODEL_TYPE.DNN
         # File paths
         self.ORIGINAL_DB_FILE   = "/Users/user/Desktop/Temp/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE   = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
-        self.MODEL_FILE_NAME    = "models/model2.pt"
+        self.MODEL_FILE_NAME    = "models/model3.pt"
 
         # Below parameters are used in extract_db script to extract certain window in database
         self.DATABASE_FILE  = "data/waveforms_4s_new_full.hdf5" # Overide if file alreay exist

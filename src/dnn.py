@@ -2,24 +2,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class NZQuakeDNN(nn.Module):
-    def __init__(self, window_size):
-        super(NZQuakeDNN, self).__init__()
-        self.conv1 = nn.Conv1d(3, 16, kernel_size=5)
-        self.conv2 = nn.Conv1d(16, 32, kernel_size=5)
-        
-        # Calculate the correct size after convolutions
-        conv1_out_size = window_size - 5 + 1
-        conv2_out_size = conv1_out_size - 5 + 1
-        
-        self.fc1 = nn.Linear(32 * conv2_out_size, 64)
-        self.fc2 = nn.Linear(64, 2)  # Binary classification: Earthquake wave or noise
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
+class DNN(nn.Module):
+    def __init__(self):
+        super(DNN, self).__init__()
+        self.input_layer = nn.Linear(600, 128)
+        self.hidden1 = nn.Linear(128, 64)
+        self.hidden2 = nn.Linear(64,8)
+        self.output = nn.Linear(8,1)
+    
+    def forward(self,x):
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = F.relu(self.input_layer(x))
+        x = F.relu(self.hidden1(x))
+        x = F.relu(self.hidden2(x))
         return x
+
 
