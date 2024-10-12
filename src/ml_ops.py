@@ -24,11 +24,12 @@ def train(cfg):
    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
    train_losses = []
+   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
       print("Training CNN")
-      model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE)
+      model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE).to(device)
       criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
@@ -52,7 +53,7 @@ def train(cfg):
 
    elif cfg.MODEL_TYPE == MODEL_TYPE.DNN:
       print("Training DNN")
-      model = DNN()
+      model = DNN().to(device)
       criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
