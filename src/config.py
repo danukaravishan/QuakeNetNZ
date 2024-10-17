@@ -19,7 +19,7 @@ class Config:
     def __init__(self):
         
         #set program mode
-        self.MODE               = MODE_TYPE.PREDICT
+        self.MODE               = MODE_TYPE.TRAIN
 
         self.MODEL_TYPE         = MODEL_TYPE.CNN
         # File paths
@@ -47,3 +47,6 @@ class Config:
 
         self.TEST_DATA_SPLIT_RATIO = 0.2
         self.IS_SPLIT_DATA         = True
+
+        # ML model settings
+        self.BATCH_SIZE = 64
