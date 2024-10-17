@@ -21,7 +21,7 @@ def train(cfg):
    y = np.array([1] * len(positive_data) + [0] * len(noise_data))  # 1 for P wave, 0 for noise
 
    dataset = TensorDataset(torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.long))
-   dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+   dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
 
    train_losses = []
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -30,10 +30,12 @@ def train(cfg):
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
       print("Training CNN")
       model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE).to(device)
+      model.load_state_dict(torch.load(cfg.MODEL_FILE_NAME))
+      model.eval()
       criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-      for epoch in range(100):  # Example: 10 epochs.  We can increase this number to converge more
+      for epoch in range(50):  # Example: 10 epochs.  We can increase this number to converge more
          epoch_loss = 0
          for batch_X, batch_y in dataloader:
             optimizer.zero_grad()
@@ -54,19 +56,25 @@ def train(cfg):
    elif cfg.MODEL_TYPE == MODEL_TYPE.DNN:
       print("Training DNN")
       model = DNN().to(device)
-      criterion = nn.CrossEntropyLoss()
+      model.apply(InitWeights)
+      #criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+      scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+      #criterion = nn.BCELoss()
+      criterion = nn.BCEWithLogitsLoss()
 
-      for epoch in range(100):  # Example: 10 epochs.  We can increase this number to converge more
+      for epoch in range(50):  # Example: 10 epochs.  We can increase this number to converge more
          epoch_loss = 0 
          for batch_X, batch_y in dataloader:
             optimizer.zero_grad()
-            output = model(batch_X)
+            output = model(batch_X).squeeze()
+            batch_y = batch_y.float()
             loss = criterion(output, batch_y)
             loss.backward()
             optimizer.step()
             epoch_loss+= loss.item()
          
+         scheduler.step()
          avg_epoch_loss = (epoch_loss/len(dataloader))
          train_losses.append(avg_epoch_loss)
          print(f'Epoch {epoch+1}, Loss: {avg_epoch_loss}')
@@ -79,8 +87,13 @@ def train(cfg):
 def predict(cfg): 
    print("Predicting for test set")
 
-   model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE)
-   #model = DNN()
+   model = None
+
+   if cfg.MODEL_TYPE == MODEL_TYPE.DNN:
+      model = DNN()
+   elif cfg.MODEL_TYPE == MODEL_TYPE.CNN:
+      model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE)
+
    model.load_state_dict(torch.load(cfg.MODEL_FILE_NAME))
    model.eval()
 
@@ -102,8 +115,9 @@ def predict(cfg):
       predictions = model(test_tensor)
 
    predicted_classes = torch.argmax(predictions, dim=1)
- 
- # Calculate the accuracy. This is tempory calculation
+   #predicted_classes = ((predictions >= 0.9).int()).squeeze() # Use detection threshold as 0.5 
+   
+   #Calculate the accuracy. This is tempory calculation
    true_tensor = torch.tensor(true_vrt, dtype=torch.long) 
    
    assert (predicted_classes.shape == true_tensor.shape)
@@ -114,13 +128,9 @@ def predict(cfg):
    print(f"Prediction accuracy: {accuracy * 100:.2f}%")
 
 
-def detection_accuracy(test_data, model):
-   positive_count = 0
-   total_data = len(test_data)
-   for x in test_data:
-      if predict(x) == 1:
-         positive_count +=1 
-   return (positive_count/total_data)*100
+def detection_accuracy(predicted_data, true_data):
+   print("Detection Accuracy Matrix")
+
 
 
 # IDLE method. Not useful
