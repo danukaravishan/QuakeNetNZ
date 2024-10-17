@@ -24,3 +24,7 @@ import torch
 import torch.nn as nn
 
 from plot   import *
+
+# Signal processing
+import scipy 
+import scipy.signal as signal
