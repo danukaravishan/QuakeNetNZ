@@ -35,7 +35,7 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 #Function to append model data to csv file
-def addToCSV(cfg, model, accuracy, precision, recall, f1, learning_rate = 0.001):
+def addToCSV(cfg, model, accuracy, precision, recall, f1, parameters, learning_rate = 0.001):
 
     file_exists = os.path.isfile(cfg.CSV_FILE)
 
@@ -45,7 +45,6 @@ def addToCSV(cfg, model, accuracy, precision, recall, f1, learning_rate = 0.001)
         if not file_exists:
             writer.writerow(['Model ID', 'Accuracy', 'Precision', 'Recall', 'F1 Score', 'Learning Rate', 'Model Parameters'])
 
-        parameters = count_parameters(model)
         writer.writerow([model.model_id, f"{accuracy:.4f}%", f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", learning_rate, parameters])
 
     print(f"Model details for {model.model_id} appended to {cfg.CSV_FILE} CSV.")
@@ -64,12 +63,14 @@ def test_report(cfg, model, true_tensor, predicted_classes):
     precision = 100*(TP / (TP + FP)) if (TP + FP) != 0 else 0
     recall = 100*(TP / (TP + FN)) if (TP + FN) != 0 else 0
     f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
+    parameters = count_parameters(model)
 
     # Print the results
     print(f'Accuracy: {accuracy:.4f}%')
     print(f'Precision: {precision:.4f}%')
     print(f'Recall: {recall:.4f}%')
     print(f'F1 Score: {f1:.4f}%')
+    print(f'Parameters: {parameters}%')
     
     pdf = FPDF()
     pdf.add_page()
@@ -96,11 +97,12 @@ def test_report(cfg, model, true_tensor, predicted_classes):
     pdf.cell(200, 10, txt=f"Precision: {precision:.4f}%", ln=True, align='L')
     pdf.cell(200, 10, txt=f"Recall: {recall:.4f}%", ln=True, align='L')
     pdf.cell(200, 10, txt=f"F1 Score: {f1:.4f}%", ln=True, align='L')
+    pdf.cell(200, 10, txt=f"Parameters: {parameters}%", ln=True, align='L')
 
     pdf_filename = cfg.MODEL_PATH + model.model_id + ".pdf"
     pdf.output(pdf_filename)
     print(f"Write output to {pdf_filename}")    
-    addToCSV(cfg, model, accuracy, precision, recall, f1)
+    addToCSV(cfg, model, accuracy, precision, recall, f1, parameters)
 
 
 def find_latest_file(directory, prefix, extension):

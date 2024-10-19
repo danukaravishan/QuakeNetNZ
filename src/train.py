@@ -43,7 +43,7 @@ def train(cfg):
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
    model = None
 
-   epochs = 5
+   epochs = 250
 
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
