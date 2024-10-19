@@ -24,8 +24,8 @@ def main():
       test(cfg)
 
    elif cfg.MODE == MODE_TYPE.ALL:
-      train()
-      test()
+      train(cfg)
+      test(cfg)
 
 if __name__ == "__main__":
     main()
