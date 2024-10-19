@@ -7,17 +7,29 @@ from config import Config, MODE_TYPE, MODEL_TYPE
 def test(cfg): 
    print("Runnig for test set")
 
+   if cfg.MODEL_NAME == "models/model_default.pt":
+      model_name = getLatestModelName(cfg)
+      cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model_name
+   else:
+      print(f"Using the model:  {cfg.MODEL_NAME} for testing")
+
+   if not os.path.isfile(cfg.MODEL_FILE_NAME):
+      raise ValueError(f"No model found as :{cfg.MODEL_FILE_NAME}")
+   
    model = None
 
-   if cfg.MODEL_TYPE == MODEL_TYPE.DNN:
-      model = DNN()
-   elif cfg.MODEL_TYPE == MODEL_TYPE.CNN:
-      model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE)
+   checkpoint = torch.load(cfg.MODEL_FILE_NAME)
+   model_id = checkpoint['model_id']  # Load model ID
 
-   model.load_state_dict(torch.load(cfg.MODEL_FILE_NAME))
+   if cfg.MODEL_TYPE == MODEL_TYPE.DNN:
+      model = DNN(model_id=model_id)
+   elif cfg.MODEL_TYPE == MODEL_TYPE.CNN:
+      model = PWaveCNN(model_id=model_id, window_size=cfg.SAMPLE_WINDOW_SIZE)
+
+   model.load_state_dict(checkpoint['model_state_dict'])
    model.eval()
 
-   hdf5_file = h5py.File("data/test_data", 'r')
+   hdf5_file = h5py.File(cfg.TEST_DATA, 'r')
    p_data, s_data, noise_data = getWaveData(cfg, hdf5_file)
 
    p_data      = np.array(p_data)
@@ -42,9 +54,10 @@ def test(cfg):
    
    assert (predicted_classes.shape == true_tensor.shape)
 
-   correct_predictions = (predicted_classes == true_tensor).sum().item() 
-   total_predictions = true_tensor.size(0)
-   accuracy = correct_predictions / total_predictions
-   print(f"Prediction accuracy: {accuracy * 100:.2f}%")
+   res = test_report(cfg, model, true_tensor, predicted_classes)
+   
+   if res == 0:
+      print("Testing completed successfully")
+
 
 

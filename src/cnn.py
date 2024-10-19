@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from datetime import datetime
 
 class PWaveCNN(nn.Module):
-    def __init__(self, window_size):
+    def __init__(self, window_size, model_id = ""):
         super(PWaveCNN, self).__init__()
         self.conv1 = nn.Conv1d(3, 16, kernel_size=5)
         self.conv2 = nn.Conv1d(16, 32, kernel_size=5)
@@ -14,6 +15,8 @@ class PWaveCNN(nn.Module):
         
         self.fc1 = nn.Linear(32 * conv2_out_size, 64)
         self.fc2 = nn.Linear(64, 2)  # Binary classification: P wave or noise
+
+        self.model_id = "cnn_"+datetime.now().strftime("%Y%m%d_%H%M") if model_id == "" else model_id
 
     def forward(self, x):
         x = F.relu(self.conv1(x))

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from datetime import datetime
 
 class DNN(nn.Module):
     def __init__(self):
@@ -9,7 +10,8 @@ class DNN(nn.Module):
         self.hidden1 = nn.Linear(128, 64)
         self.hidden2 = nn.Linear(64,8)
         self.output = nn.Linear(8,1)
-    
+        self.model_id = "dnn_"+datetime.now().strftime("%Y%m%d_%H%M")
+
     def forward(self,x):
         x = x.view(x.size(0), -1)
         x = F.relu(self.input_layer(x))

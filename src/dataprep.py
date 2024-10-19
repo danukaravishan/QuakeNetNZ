@@ -5,3 +5,4 @@ def highpass_filter():
 
 def normalize():
     print("Normalise")
+

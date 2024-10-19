@@ -19,6 +19,7 @@ def main():
 
    elif cfg.MODE == MODE_TYPE.TRAIN:
       train(cfg)
+      test(cfg)
 
    elif cfg.MODE == MODE_TYPE.PREDICT:
       test(cfg)

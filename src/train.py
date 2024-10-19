@@ -2,7 +2,7 @@ from utils import *
 from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE
 
-def _train(model, dataloader, optimizer, criterion, epoch_iter):
+def _train(model, dataloader, optimizer, criterion, epoch_iter=50):
 
    train_losses = []
    for epoch in range(epoch_iter):
@@ -10,7 +10,7 @@ def _train(model, dataloader, optimizer, criterion, epoch_iter):
       for batch_X, batch_y in dataloader:
          optimizer.zero_grad()
          output = model(batch_X)
-         loss = criterion(output, batch_y)
+         loss = criterion(output.squeeze(), batch_y)
          loss.backward()
          optimizer.step()
          epoch_loss+= loss.item()
@@ -24,7 +24,7 @@ def _train(model, dataloader, optimizer, criterion, epoch_iter):
 
 def train(cfg):
       
-   hdf5_file = h5py.File("data/train_data", 'r')
+   hdf5_file = h5py.File(cfg.TRAIN_DATA, 'r')
    p_data, s_data, noise_data = getWaveData(cfg, hdf5_file)
    
    # Data preparation
@@ -41,19 +41,14 @@ def train(cfg):
    dataloader = DataLoader(dataset, batch_size=cfg.BATCH_SIZE, shuffle=True)
 
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+   model = None
 
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
       model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE).to(device)
       criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-      model, train_losses = _train(model, dataloader, optimizer, criterion, 10)
-
-      # Save the model
-      torch.save(model.state_dict(), cfg.MODEL_FILE_NAME)
-      plot_loss(train_losses)
-
+      model, train_losses = _train(model, dataloader, optimizer, criterion, 5)
 
    elif cfg.MODEL_TYPE == MODEL_TYPE.DNN:
       model = DNN().to(device)
@@ -61,9 +56,14 @@ def train(cfg):
       #criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
       criterion = nn.BCEWithLogitsLoss()
-      model, train_losses = _train(model, dataloader, optimizer, criterion, 50)
+      model, train_losses = _train(model, dataloader, optimizer, criterion, 5)
 
-      # Save the model
-      torch.save(model.state_dict(), cfg.MODEL_FILE_NAME)      
-      plot_loss(train_losses)
+   # Save the model
+   cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model.model_id
 
+   torch.save({
+      'model_state_dict': model.state_dict(),
+      'model_id': model.model_id,  # Save model ID
+   }, cfg.MODEL_FILE_NAME + ".pt")
+
+   plot_loss(train_losses, cfg.MODEL_FILE_NAME)

@@ -46,9 +46,9 @@ def split_data():
         return Exception("Database file is not available")
     
     # Train dataset
-    train_dataset_file = "data/train_data"
+    train_dataset_file = cfg.TRAIN_DATA
     # Test dataset
-    test_dataset_file = "data/test_data"
+    test_dataset_file = cfg.TEST_DATA
 
     if os.path.isfile(train_dataset_file):
         os.remove(train_dataset_file)

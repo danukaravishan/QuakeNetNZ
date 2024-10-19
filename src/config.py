@@ -24,15 +24,19 @@ class Config:
         self.MODEL_TYPE         = MODEL_TYPE.CNN
         # File paths
         self.ORIGINAL_DB_FILE   = "/Users/user/Desktop/Temp/waveforms.hdf5"
-        #self.ORIGINAL_DB_FILE   = "data/waveforms_new.hdf5"
+        #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
-        self.MODEL_FILE_NAME    = "models/mode_cnn_test.pt"
+        self.MODEL_FILE_NAME    = "models/model_default.pt" # default model name : model_default.pt. If this is changed, new name will considered as the model_name for testing
+        self.MODEL_PATH         = "models/"
 
         # Below parameters are used in extract_db script to extract certain window in database
         self.DATABASE_FILE  = "data/waveforms_4s_new_full.hdf5" # Overide if file alreay exist
         self.ORIGINAL_SAMPLING_RATE = 50 # Most of the data points are in this category. Hence choosing as the base sampling rate
         self.TRAINING_WINDOW        = 4 # in seconds
         self.BASE_SAMPLING_RATE     = 50
+
+        self.TEST_DATA              = "data/test_data"
+        self.TRAIN_DATA             = "data/train_data"
 
         self.TRAINING_WINDOW        = 4 # in seconds
 
