@@ -43,7 +43,7 @@ def train(cfg):
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
    model = None
 
-   epochs = 10
+   epochs = 5
 
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
@@ -56,7 +56,7 @@ def train(cfg):
       model = DNN().to(device)
       model.apply(InitWeights)
       #criterion = nn.CrossEntropyLoss()
-      optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+      optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
       criterion = nn.BCEWithLogitsLoss()
       model, train_losses = _train(model, dataloader, optimizer, criterion, epochs)
 
@@ -69,3 +69,4 @@ def train(cfg):
    }, cfg.MODEL_FILE_NAME + ".pt")
 
    plot_loss(train_losses, cfg.MODEL_FILE_NAME)
+   cfg.MODEL_FILE_NAME += ".pt"

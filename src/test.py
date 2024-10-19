@@ -11,7 +11,7 @@ def test(cfg):
       model_name = getLatestModelName(cfg)
       cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model_name
    else:
-      print(f"Using the model:  {cfg.MODEL_NAME} for testing")
+      print(f"Using the model:  {cfg.MODEL_FILE_NAME} for testing")
 
    if not os.path.isfile(cfg.MODEL_FILE_NAME):
       raise ValueError(f"No model found as :{cfg.MODEL_FILE_NAME}")

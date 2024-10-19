@@ -19,14 +19,13 @@ def main():
 
    elif cfg.MODE == MODE_TYPE.TRAIN:
       train(cfg)
-      test(cfg)
 
    elif cfg.MODE == MODE_TYPE.PREDICT:
       test(cfg)
 
-   elif cfg.MODE == MODE_TYPE.MODEL_ACCURACY:
-      model = PWaveCNN(cfg.BASE_SAMPLING_RATE*cfg.TRAINING_WINDOW)  # Make sure to use the same window_size used during training
-      model.load_state_dict(torch.load(cfg.MODEL_FILE_NAME))
+   elif cfg.MODE == MODE_TYPE.ALL:
+      train()
+      test()
 
 if __name__ == "__main__":
     main()

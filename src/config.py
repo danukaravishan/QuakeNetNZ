@@ -5,7 +5,7 @@ class MODE_TYPE(Enum):
     IDLE           = 1
     TRAIN          = 2
     PREDICT        = 3
-    MODEL_ACCURACY = 4
+    ALL            = 4
     EXTRACT_DATA   = 5
     SPLIT_DATA     = 6
 
