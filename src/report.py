@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 from fpdf import FPDF
 import os
+import csv
 
 def plot_loss(train_losses, file_name):
     plt.plot(train_losses, label='Training Loss')
@@ -27,6 +28,30 @@ def recall():
 def F1Score():
     return 0
 
+def addToCSV(model, cfg):
+    return 0
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+#Function to append model data to csv file
+def addToCSV(cfg, model, accuracy, precision, recall, f1, learning_rate = 0.001):
+
+    file_exists = os.path.isfile(cfg.CSV_FILE)
+
+    with open(cfg.CSV_FILE, mode='a', newline='') as file:
+        writer = csv.writer(file)
+
+        if not file_exists:
+            writer.writerow(['Model ID', 'Accuracy', 'Precision', 'Recall', 'F1 Score', 'Learning Rate', 'Model Parameters'])
+
+        parameters = count_parameters(model)
+        writer.writerow([model.model_id, f"{accuracy:.4f}%", f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", learning_rate, parameters])
+
+    print(f"Model details for {model.model_id} appended to {cfg.CSV_FILE} CSV.")
+
+
+# Function to dump all model details into a seperate pdf file
 def test_report(cfg, model, true_tensor, predicted_classes):
 
     TP = ((predicted_classes == 1) & (true_tensor == 1)).sum().item()  # True Positives
@@ -74,8 +99,9 @@ def test_report(cfg, model, true_tensor, predicted_classes):
 
     pdf_filename = cfg.MODEL_PATH + model.model_id + ".pdf"
     pdf.output(pdf_filename)
+    print(f"Write output to {pdf_filename}")    
+    addToCSV(cfg, model, accuracy, precision, recall, f1)
 
-    return 0
 
 def find_latest_file(directory, prefix, extension):
     files = [f for f in os.listdir(directory) if f.startswith(prefix) and f.endswith(extension)]
@@ -83,6 +109,7 @@ def find_latest_file(directory, prefix, extension):
         raise ValueError(f"No files with prefix '{prefix}' and extension '{extension}' found in {directory}")
     latest_file = max(files, key=lambda x: os.path.getctime(os.path.join(directory, x)))
     return latest_file
+
 
 def getLatestModelName(cfg):
     # Fine the latest file name

@@ -43,12 +43,14 @@ def train(cfg):
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
    model = None
 
+   epochs = 10
+
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
       model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE).to(device)
       criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-      model, train_losses = _train(model, dataloader, optimizer, criterion, 5)
+      model, train_losses = _train(model, dataloader, optimizer, criterion, epochs)
 
    elif cfg.MODEL_TYPE == MODEL_TYPE.DNN:
       model = DNN().to(device)
@@ -56,7 +58,7 @@ def train(cfg):
       #criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
       criterion = nn.BCEWithLogitsLoss()
-      model, train_losses = _train(model, dataloader, optimizer, criterion, 5)
+      model, train_losses = _train(model, dataloader, optimizer, criterion, epochs)
 
    # Save the model
    cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model.model_id

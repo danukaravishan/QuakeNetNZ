@@ -54,3 +54,5 @@ class Config:
 
         # ML model settings
         self.BATCH_SIZE = 64
+
+        self.CSV_FILE   = "data/model_details.csv"

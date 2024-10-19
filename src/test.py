@@ -7,7 +7,7 @@ from config import Config, MODE_TYPE, MODEL_TYPE
 def test(cfg): 
    print("Runnig for test set")
 
-   if cfg.MODEL_NAME == "models/model_default.pt":
+   if cfg.MODEL_FILE_NAME == "models/model_default.pt":
       model_name = getLatestModelName(cfg)
       cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model_name
    else:
