@@ -1,6 +1,6 @@
 from utils import *
 from database_op import *
-from config import Config, MODE_TYPE, MODEL_TYPE
+from config import Config, MODE_TYPE, MODEL_TYPE, NNCFG
 
 def _train(model, dataloader, optimizer, criterion, epoch_iter=50):
 
@@ -23,7 +23,10 @@ def _train(model, dataloader, optimizer, criterion, epoch_iter=50):
 
 
 def train(cfg):
-      
+   
+   nncfg = NNCFG()
+   nncfg.argParser()
+
    hdf5_file = h5py.File(cfg.TRAIN_DATA, 'r')
    p_data, s_data, noise_data = getWaveData(cfg, hdf5_file)
    
@@ -38,27 +41,25 @@ def train(cfg):
    Y = np.array([1] * len(positive_data) + [0] * len(noise_data))  # 1 for P wave, 0 for noise
 
    dataset = TensorDataset(torch.tensor(X, dtype=torch.float32), torch.tensor(Y, dtype=torch.long))
-   dataloader = DataLoader(dataset, batch_size=cfg.BATCH_SIZE, shuffle=True)
+   dataloader = DataLoader(dataset, batch_size=nncfg.batch_size, shuffle=True)
 
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
    model = None
-
-   epochs = 250
 
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
       model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE).to(device)
       criterion = nn.CrossEntropyLoss()
-      optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-      model, train_losses = _train(model, dataloader, optimizer, criterion, epochs)
+      optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
+      model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
 
    elif cfg.MODEL_TYPE == MODEL_TYPE.DNN:
       model = DNN().to(device)
       model.apply(InitWeights)
       #criterion = nn.CrossEntropyLoss()
-      optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+      optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
       criterion = nn.BCEWithLogitsLoss()
-      model, train_losses = _train(model, dataloader, optimizer, criterion, epochs)
+      model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
 
    # Save the model
    cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model.model_id

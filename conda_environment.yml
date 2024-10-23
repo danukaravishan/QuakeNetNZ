@@ -419,4 +419,5 @@ dependencies:
       - pyobjc-framework-vision==10.3.1
       - pyobjc-framework-webkit==10.3.1
       - sqlalchemy==1.4.53
+      - fpdf==1.7.2 
 prefix: /Users/user/Applications/miniconda/envs/ml_base
