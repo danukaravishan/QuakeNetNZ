@@ -61,12 +61,18 @@ def train(cfg):
       criterion = nn.BCEWithLogitsLoss()
       model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
 
-   # Save the model
+   
    cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model.model_id
 
+   # Save the model
    torch.save({
       'model_state_dict': model.state_dict(),
-      'model_id': model.model_id,  # Save model ID
+      'model_id'        : model.model_id,  # Save model ID
+      'epoch_count'     : nncfg.epoch_count,
+      'learning_rate'   : nncfg.learning_rate,
+      'batch_size'      : nncfg.batch_size,
+      'optimizer'       : optimizer.__class__.__name__.lower(),
+      'training_loss'   : train_losses
    }, cfg.MODEL_FILE_NAME + ".pt")
 
    plot_loss(train_losses, cfg.MODEL_FILE_NAME)

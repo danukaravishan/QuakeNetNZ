@@ -20,7 +20,7 @@ class Config:
     def __init__(self):
         
         #set program mode
-        self.MODE               = MODE_TYPE.TRAIN
+        self.MODE               = MODE_TYPE.ALL
 
         self.MODEL_TYPE         = MODEL_TYPE.CNN
         # File paths
@@ -63,13 +63,19 @@ class NNCFG:
     def __init__(self):
         self.learning_rate          = 0.001
         self.epoch_count            = 2
-        self.batch_size             = 64
+        self.batch_size             = 32
 
         self.adam_beta1             = 0.1
         self.adam_beta2             = 0.1
         self.adam_gamma             = 0.1
 
         self.detection_threshold    = 0.5
+
+        # Dynamic variables
+        self.training_loss          = None
+        self.optimizer              = None
+        self.model_id               = None
+
 
 
     def argParser(self):

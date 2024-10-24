@@ -3,9 +3,21 @@ from utils import *
 from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE
 
+def loadModelConfig(nncfg, checkpoint):
+
+   nncfg.model_id       = checkpoint['model_id']
+   nncfg.learning_rate  = checkpoint['learning_rate']
+   nncfg.epoch_count    = checkpoint['epoch_count']
+   nncfg.batch_size     = checkpoint['batch_size']
+
+   nncfg.training_loss  = checkpoint['training_loss']
+   nncfg.optimizer      = checkpoint['optimizer']
+
 
 def test(cfg): 
+   
    print("Runnig for test set")
+   nncfg = NNCFG()
 
    if cfg.MODEL_FILE_NAME == "models/model_default.pt":
       model_name = getLatestModelName(cfg)
@@ -19,12 +31,13 @@ def test(cfg):
    model = None
 
    checkpoint = torch.load(cfg.MODEL_FILE_NAME)
-   model_id = checkpoint['model_id']  # Load model ID
+   loadModelConfig(nncfg, checkpoint)
+
 
    if cfg.MODEL_TYPE == MODEL_TYPE.DNN:
-      model = DNN(model_id=model_id)
+      model = DNN(model_id=nncfg.model_id)
    elif cfg.MODEL_TYPE == MODEL_TYPE.CNN:
-      model = PWaveCNN(model_id=model_id, window_size=cfg.SAMPLE_WINDOW_SIZE)
+      model = PWaveCNN(model_id=nncfg.model_id, window_size=cfg.SAMPLE_WINDOW_SIZE)
 
    model.load_state_dict(checkpoint['model_state_dict'])
    model.eval()
@@ -54,7 +67,7 @@ def test(cfg):
    
    assert (predicted_classes.shape == true_tensor.shape)
 
-   res = test_report(cfg, model, true_tensor, predicted_classes)
+   res = test_report(cfg, nncfg, model, true_tensor, predicted_classes)
    
    if res == 0:
       print("Testing completed successfully")

@@ -16,26 +16,12 @@ def plot_loss(train_losses, file_name):
     plt.savefig(image_filename)  # Save as PNG, you can change to other formats like .pdf, .jpeg
     print(f"Loss curve saved as {image_filename}")
     
-def accuracy():
-    return 0
-
-def precision():
-    return 0
-
-def recall():
-    return 0
-
-def F1Score():
-    return 0
-
-def addToCSV(model, cfg):
-    return 0
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 #Function to append model data to csv file
-def addToCSV(cfg, model, accuracy, precision, recall, f1, parameters, learning_rate = 0.001):
+def addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters):
 
     file_exists = os.path.isfile(cfg.CSV_FILE)
 
@@ -43,15 +29,15 @@ def addToCSV(cfg, model, accuracy, precision, recall, f1, parameters, learning_r
         writer = csv.writer(file)
 
         if not file_exists:
-            writer.writerow(['Model ID', 'Accuracy', 'Precision', 'Recall', 'F1 Score', 'Learning Rate', 'Model Parameters'])
+            writer.writerow(['Model ID', 'Accuracy', 'Precision', 'Recall', 'F1 Score', 'Model Parameters', 'Learning Rate', 'Batch size', 'Epoch', 'Optimizer'])
 
-        writer.writerow([model.model_id, f"{accuracy:.4f}%", f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", learning_rate, parameters])
+        writer.writerow([model.model_id, f"{accuracy:.4f}%", f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", parameters, nncfg.learning_rate, nncfg.batch_size, nncfg.epoch_count, nncfg.optimizer])
 
     print(f"Model details for {model.model_id} appended to {cfg.CSV_FILE} CSV.")
 
 
 # Function to dump all model details into a seperate pdf file
-def test_report(cfg, model, true_tensor, predicted_classes):
+def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
 
     TP = ((predicted_classes == 1) & (true_tensor == 1)).sum().item()  # True Positives
     TN = ((predicted_classes == 0) & (true_tensor == 0)).sum().item()  # True Negatives
@@ -70,7 +56,7 @@ def test_report(cfg, model, true_tensor, predicted_classes):
     print(f'Precision: {precision:.4f}%')
     print(f'Recall: {recall:.4f}%')
     print(f'F1 Score: {f1:.4f}%')
-    print(f'Parameters: {parameters}%')
+    print(f'Parameters: {parameters}')
     
     pdf = FPDF()
     pdf.add_page()
@@ -97,12 +83,12 @@ def test_report(cfg, model, true_tensor, predicted_classes):
     pdf.cell(200, 10, txt=f"Precision: {precision:.4f}%", ln=True, align='L')
     pdf.cell(200, 10, txt=f"Recall: {recall:.4f}%", ln=True, align='L')
     pdf.cell(200, 10, txt=f"F1 Score: {f1:.4f}%", ln=True, align='L')
-    pdf.cell(200, 10, txt=f"Parameters: {parameters}%", ln=True, align='L')
+    pdf.cell(200, 10, txt=f"Parameters: {parameters}", ln=True, align='L')
 
     pdf_filename = cfg.MODEL_PATH + model.model_id + ".pdf"
     pdf.output(pdf_filename)
     print(f"Write output to {pdf_filename}")    
-    addToCSV(cfg, model, accuracy, precision, recall, f1, parameters)
+    addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters)
 
 
 def find_latest_file(directory, prefix, extension):
