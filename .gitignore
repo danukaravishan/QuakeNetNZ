@@ -8,6 +8,8 @@ data/train_data
 data/test_data
 
 models/*
+run.sh
+data/model_details.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
