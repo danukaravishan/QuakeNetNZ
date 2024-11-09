@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 from cnn import PWaveCNN
 from dnn import DNN
 from dnn import InitWeights
+from cred import CRED
 from torch.utils.data import DataLoader, TensorDataset
 import torch
 import torch.nn as nn
@@ -30,3 +31,7 @@ from report   import *
 # Signal processing
 import scipy 
 import scipy.signal as signal
+
+
+# Seisbench 
+import seisbench.models as sbm

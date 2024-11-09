@@ -36,8 +36,8 @@ def getWaveData(cfg, hdf5_file):
 
     return p_data, s_data, noise_data
 
-# This function will split the cfg.DATABASE_FILE into two (Train and Test) and create new files
 
+# This function will split the cfg.DATABASE_FILE into two (Train and Test) and create new files
 def split_data():
     cfg = Config()
     hdf5_file = h5py.File(cfg.DATABASE_FILE, 'r')

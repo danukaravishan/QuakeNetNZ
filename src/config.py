@@ -11,20 +11,22 @@ class MODE_TYPE(Enum):
     SPLIT_DATA     = 6
 
 class MODEL_TYPE(Enum):
-    DNN = 1
-    CNN = 2
-    RNN = 3
+    DNN      = 1
+    CNN      = 2
+    RNN      = 3
+    PhaseNet = 4
+    CRED     = 5
 
 ## This class has all the configurations that control the scripts
 class Config:
     def __init__(self):
         
         #set program mode
-        self.MODE               = MODE_TYPE.ALL
+        self.MODE               = MODE_TYPE.EXTRACT_DATA
 
-        self.MODEL_TYPE         = MODEL_TYPE.CNN
+        self.MODEL_TYPE         = MODEL_TYPE.CRED
         # File paths
-        self.ORIGINAL_DB_FILE   = "/Users/user/Desktop/Temp/waveforms.hdf5"
+        self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
         self.MODEL_FILE_NAME    = "models/model_default.pt" # default model name : model_default.pt. If this is changed, new name will considered as the model_name for testing
@@ -33,13 +35,12 @@ class Config:
         # Below parameters are used in extract_db script to extract certain window in database
         self.DATABASE_FILE  = "data/waveforms_4s_new_full.hdf5" # Overide if file alreay exist
         self.ORIGINAL_SAMPLING_RATE = 50 # Most of the data points are in this category. Hence choosing as the base sampling rate
-        self.TRAINING_WINDOW        = 4 # in seconds
+        self.TRAINING_WINDOW        = 30 # in seconds
         self.BASE_SAMPLING_RATE     = 50
+        self.DATA_EXTRACTED_FILE = f"data/waveform_{self.TRAINING_WINDOW}s_data.hdf5"
 
         self.TEST_DATA              = "data/test_data"
         self.TRAIN_DATA             = "data/train_data"
-
-        self.TRAINING_WINDOW        = 4 # in seconds
 
         # Improve the verbosity
         self.ENABLE_PRINT           = 0
@@ -62,7 +63,7 @@ class Config:
 class NNCFG:
     def __init__(self):
         self.learning_rate          = 0.001
-        self.epoch_count            = 2
+        self.epoch_count            = 5
         self.batch_size             = 32
 
         self.adam_beta1             = 0.1
