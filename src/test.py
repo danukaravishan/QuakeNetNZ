@@ -38,6 +38,9 @@ def test(cfg):
       model = DNN(model_id=nncfg.model_id)
    elif cfg.MODEL_TYPE == MODEL_TYPE.CNN:
       model = PWaveCNN(model_id=nncfg.model_id, window_size=cfg.SAMPLE_WINDOW_SIZE)
+   elif cfg.MODEL_TYPE == MODEL_TYPE.CRED:
+      assert("This routine is yet to be implemented")
+      model = sbm.PhaseNet(phases="PSN", norm="peak")
 
    model.load_state_dict(checkpoint['model_state_dict'])
    model.eval()

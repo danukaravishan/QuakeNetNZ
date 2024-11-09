@@ -61,6 +61,21 @@ def train(cfg):
       criterion = nn.BCEWithLogitsLoss()
       model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
 
+   elif cfg.MODEL_TYPE == MODEL_TYPE.PhaseNet:
+         model = sbm.PhaseNet(phases="PSN", norm="peak")
+         #criterion = nn.CrossEntropyLoss()
+         optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
+         criterion = nn.BCEWithLogitsLoss()
+         model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
+
+   elif cfg.MODEL_TYPE == MODEL_TYPE.CRED:
+        # Define the CRED model
+        input_shape = (X.shape[1], X.shape[2], 1)  # assuming X is formatted as (batch, height, width, channels)
+        filters = [32, 64, 128, 256]  # example filter values, adjust as needed
+        model = CRED(input_shape=input_shape, filters=filters).to(device)
+        criterion = nn.BCEWithLogitsLoss()  # Use Binary Cross-Entropy as we're doing binary classification
+        optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
+        model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
    
    cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model.model_id
 
