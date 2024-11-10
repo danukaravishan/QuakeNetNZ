@@ -10,6 +10,7 @@ data/test_data
 models/*
 run.sh
 data/model_details.csv
+data/eqtest_models.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

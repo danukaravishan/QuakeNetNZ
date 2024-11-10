@@ -58,6 +58,10 @@ class Config:
         self.BATCH_SIZE = 64
 
         self.CSV_FILE   = "data/model_details.csv"
+        
+        # EQTest configs
+        self.EQTEST_MODEL_CSV = "data/eqtest_models.csv"
+        self.SHIFT_WINDOW     = 2
 
 
 class NNCFG:

@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from utils import *
 from dataprep import getStreamListFromDatabase
 from config import Config
+from report import count_parameters
+
 
 def data():
     # client = Client("GFZ")
@@ -80,26 +82,6 @@ def main():
         print("No earthquake signal detected")
         return 0
     
-    print("Earthquke Detected")
-    print(annotations)
-
-    if annotations.count() == 1:
-        annotations.plot()
-        return 0
-    
-    
-    fig = plt.figure(figsize=(15, 10))
-    axs = fig.subplots(2, 1, sharex=True, gridspec_kw={'hspace': 0})
-
-    offset = annotations[0].stats.starttime - stream[0].stats.starttime
-    for i in range(3):
-        axs[0].plot(stream[i].times(), stream[i].data, label=stream[i].stats.channel)
-        if annotations[i].stats.channel[-1] != "N":  # Do not plot noise curve
-            axs[1].plot(annotations[i].times() + offset, annotations[i].data, label=annotations[i].stats.channel)
-
-    axs[0].legend()
-    axs[1].legend()
-    plt.show()
 
 
 def test():
@@ -113,6 +95,7 @@ def test():
 
 
 def dev(cfg):
+
     hdf5_file = h5py.File(cfg.DATA_EXTRACTED_FILE, 'r')
     p_data_st, noise_data_st = getStreamListFromDatabase(hdf5_file)
     #model = sbm.PhaseNet.from_pretrained("original", update=True)
@@ -148,13 +131,36 @@ def dev(cfg):
         classification = model.classify(stream)
 
         if len(classification.detections) > 0:
-            #print("Detected")
             FP +=1
         else:
-            #print("Not detected")
             FN +=1
     
     print(f"TP = {TP}, FP = {FP}, TN = {TN}, FN = {FN}")
+
+    # Calculate Accuracy, Precision, Recall, and F1 Score
+    accuracy = 100*((TP + TN) / (TP + TN + FP + FN))
+    precision = 100*(TP / (TP + FP)) if (TP + FP) != 0 else 0
+    recall = 100*(TP / (TP + FN)) if (TP + FN) != 0 else 0
+    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
+    parameters = count_parameters(model)
+
+    print(f'Accuracy: {accuracy:.4f}%')
+    print(f'Precision: {precision:.4f}%')
+    print(f'Recall: {recall:.4f}%')
+    print(f'F1 Score: {f1:.4f}%')
+    print(f'Parameters: {parameters}')
+
+    file_exists = os.path.isfile(cfg.EQTEST_MODEL_CSV)
+
+    with open(cfg.EQTEST_MODEL_CSV, mode='a', newline='') as file:
+        writer = csv.writer(file)
+
+        if not file_exists:
+            writer.writerow(['Model Name', 'Input window', 'Shift', 'Accuracy', 'Precision', 'Recall', 'F1 Score', 'Model Parameters'])
+
+        writer.writerow(["CRED", f"{cfg.TRAINING_WINDOW}", f"{cfg.SHIFT_WINDOW}", f"{accuracy:.4f}%",f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", parameters])
+
+    print(f"Model details for CRED with input {cfg.TRAINING_WINDOW} and shift from p pick {cfg.SHIFT_WINDOW} appended to {cfg.EQTEST_MODEL_CSV} CSV.")
 
     return 0
 

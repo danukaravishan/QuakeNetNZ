@@ -36,12 +36,10 @@ def numpy_to_stream(data):
 
 def extractStreamDataFromHDF5Group(group):
     st_list = []
-    count = 0
     for event_id in group.keys():
         dataset = group[event_id]
         st = numpy_to_stream(dataset)
         st_list.append(st)    # Append to list
-
     return st_list
 
 
