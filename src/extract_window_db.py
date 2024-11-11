@@ -50,8 +50,12 @@ def downsample(data, original_rate, target_rate):
     downsample_factor = int(target_rate // original_rate)
     return decimate(data, downsample_factor, axis=1, zero_phase=True)
 
-def extract_data():
-    cfg = Config()
+
+def extract_data(cfg=None):
+
+    if cfg is None:
+        cfg = Config()
+
     hdf5_file = h5py.File(cfg.ORIGINAL_DB_FILE, 'r')
 
     if os.path.isfile(cfg.DATA_EXTRACTED_FILE):
@@ -79,7 +83,7 @@ def extract_data():
         downsample_factor = 1
 
         for event_id in hdf5_file.keys():
-            print(event_id)
+            #print(event_id)
             dataset = hdf5_file.get(event_id)
             data = np.array(dataset)
 
@@ -98,7 +102,7 @@ def extract_data():
 
             if sampling_rate != cfg.BASE_SAMPLING_RATE:
                 # Add code to resample to 50
-                print(sampling_rate) 
+                #print(sampling_rate) 
                 data_resampled = downsample(data, cfg.BASE_SAMPLING_RATE, sampling_rate)
                 data = data_resampled
                 downsample_factor = int(sampling_rate // cfg.BASE_SAMPLING_RATE)
@@ -113,7 +117,7 @@ def extract_data():
             # s_data = extract_wave_window(data, s_arrival_index, window_size)
             # noise_data = extract_noise_window(data, window_size, p_arrival_index)
             
-            p_data  = extract_30s_wave_window(data, p_arrival_index, 2, sampling_rate)
+            p_data  = extract_30s_wave_window(data, p_arrival_index, cfg.SHIFT_WINDOW, sampling_rate)
             noise_data = extract_30s_wave_window(data, p_arrival_index, -5, sampling_rate)
 
             if ((len(p_data[0]) != window_size) or (len(noise_data[0]) != window_size)):
@@ -141,5 +145,9 @@ def extract_data():
                 #positive_group_s[event_id].attrs[key] = value
                 negative_group[event_id].attrs[key] = value
                 # Change the wave start time, samppling rate and other changed attributes
+
+            ## Tempory check
+            if count > 100:
+                break
 
     print ("Number of records " + str(count))
