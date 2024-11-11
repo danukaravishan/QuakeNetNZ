@@ -82,8 +82,15 @@ def extract_data(cfg=None):
         count = 0
         downsample_factor = 1
 
+        split_index = int(0.8 * len(hdf5_file.keys()))
+        
         for event_id in hdf5_file.keys():
             #print(event_id)
+
+            if (count < split_index):
+                count +=1
+                continue
+
             dataset = hdf5_file.get(event_id)
             data = np.array(dataset)
 
@@ -147,7 +154,7 @@ def extract_data(cfg=None):
                 # Change the wave start time, samppling rate and other changed attributes
 
             ## Tempory check
-            if count > 100:
-                break
+            # if count > 100:
+            #     break
 
     print ("Number of records " + str(count))
