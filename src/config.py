@@ -37,7 +37,9 @@ class Config:
         self.ORIGINAL_SAMPLING_RATE = 50 # Most of the data points are in this category. Hence choosing as the base sampling rate
         self.TRAINING_WINDOW        = 30 # in seconds
         self.BASE_SAMPLING_RATE     = 50
-        self.DATA_EXTRACTED_FILE = f"data/waveform_{self.TRAINING_WINDOW}s_data.hdf5"
+        self.SHIFT_WINDOW           = 2
+        self.DATA_EXTRACTED_FILE    = f"data/waveform_{self.TRAINING_WINDOW}_{self.SHIFT_WINDOW}s_data.hdf5"
+        
 
         self.TEST_DATA              = "data/test_data"
         self.TRAIN_DATA             = "data/train_data"
@@ -61,7 +63,15 @@ class Config:
         
         # EQTest configs
         self.EQTEST_MODEL_CSV = "data/eqtest_models.csv"
-        self.SHIFT_WINDOW     = 2
+    
+
+    def argParser(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--shift_window', type=float, help='Window to be changed shifted from p wave pick')
+        args = parser.parse_args()
+
+        self.SHIFT_WINDOW         = args.shift_window if args.shift_window is not None else self.SHIFT_WINDOW
+        self.DATA_EXTRACTED_FILE  = f"data/waveform_{self.TRAINING_WINDOW}_{self.SHIFT_WINDOW}s_data.hdf5"
 
 
 class NNCFG:
@@ -80,7 +90,6 @@ class NNCFG:
         self.training_loss          = None
         self.optimizer              = None
         self.model_id               = None
-
 
 
     def argParser(self):
