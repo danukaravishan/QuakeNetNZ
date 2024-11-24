@@ -154,7 +154,7 @@ def extract_data(cfg=None):
                 # Change the wave start time, samppling rate and other changed attributes
 
             ## Tempory check
-            # if count > 100:
-            #     break
+            if count > split_index + 100:
+                break
 
     print ("Number of records " + str(count))

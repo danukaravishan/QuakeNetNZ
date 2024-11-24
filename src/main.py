@@ -1,6 +1,6 @@
 from utils import *
 from config import Config, MODE_TYPE
-from train import train
+from train import train, hyper_param_opt
 from test import test
 from extract_window_db import extract_data
 from database_op import split_data
@@ -26,6 +26,9 @@ def main():
    elif cfg.MODE == MODE_TYPE.ALL:
       train(cfg)
       test(cfg)
+
+   elif cfg.MODE == MODE_TYPE.HYPER_PARAM:
+      hyper_param_opt()
 
 if __name__ == "__main__":
     main()

@@ -9,6 +9,7 @@ class MODE_TYPE(Enum):
     ALL            = 4
     EXTRACT_DATA   = 5
     SPLIT_DATA     = 6
+    HYPER_PARAM    = 7
 
 class MODEL_TYPE(Enum):
     DNN      = 1
@@ -22,9 +23,9 @@ class Config:
     def __init__(self):
         
         #set program mode
-        self.MODE               = MODE_TYPE.EXTRACT_DATA
+        self.MODE               = MODE_TYPE.HYPER_PARAM
 
-        self.MODEL_TYPE         = MODEL_TYPE.CRED
+        self.MODEL_TYPE         = MODEL_TYPE.CNN
         # File paths
         self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
@@ -35,9 +36,9 @@ class Config:
         # Below parameters are used in extract_db script to extract certain window in database
         self.DATABASE_FILE  = "data/waveforms_4s_new_full.hdf5" # Overide if file alreay exist
         self.ORIGINAL_SAMPLING_RATE = 50 # Most of the data points are in this category. Hence choosing as the base sampling rate
-        self.TRAINING_WINDOW        = 30 # in seconds
+        self.TRAINING_WINDOW        = 4 # in seconds
         self.BASE_SAMPLING_RATE     = 50
-        self.SHIFT_WINDOW           = 2
+        self.SHIFT_WINDOW           = 10
         self.DATA_EXTRACTED_FILE    = f"data/waveform_{self.TRAINING_WINDOW}_{self.SHIFT_WINDOW}s_data.hdf5"
         
 
