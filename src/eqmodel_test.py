@@ -14,7 +14,6 @@ from config import Config
 from report import count_parameters
 from extract_window_db import extract_data
 
-
 seisbench.use_backup_repository() # Since the model weights are downloaded from TCP:2888, which is blocked by crisislab02
 
 # def data():
@@ -56,7 +55,10 @@ def eval(model, cfg):
         #classification = model.classify_aggregate(stream,{"detection_threshold":0.1})
         classification = model.classify(stream)
 
-        if len(classification.detections) > 0:
+        for trace in stream:
+            print(f"Trace {trace.id}, samples:= {len(trace.data)}, sampling rate = {trace.stats.sampling_rate}, start time = {trace.stats.starttime}, end time = {trace.stats.endtime}")
+
+        if len(classification.picks) > 0:
             TP +=1
         else:
             FN +=1
@@ -66,7 +68,7 @@ def eval(model, cfg):
         stream = stream.resample(100.0)
         stream.detrend('demean')
         classification = model.classify(stream)
-        if len(classification.detections) > 0:
+        if len(classification.picks) > 0:
             FP +=1
         else:
             TN +=1
@@ -79,7 +81,7 @@ def exec():
     cfg.argParser()
     extract_data(cfg)
 
-    model = sbm.CRED.from_pretrained("original", update=True)
+    model = sbm.PhaseNet.from_pretrained("original", update=True)
     #model.cuda()  
     TP, FP, TN, FN = eval(model, cfg)
 
