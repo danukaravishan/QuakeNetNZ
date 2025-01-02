@@ -14,6 +14,7 @@ class MODEL_TYPE(Enum):
     DNN = 1
     CNN = 2
     RNN = 3
+    UNET = 4
 
 ## This class has all the configurations that control the scripts
 class Config:
@@ -22,7 +23,7 @@ class Config:
         #set program mode
         self.MODE               = MODE_TYPE.ALL
 
-        self.MODEL_TYPE         = MODEL_TYPE.CNN
+        self.MODEL_TYPE         = MODEL_TYPE.UNET
         # File paths
         self.ORIGINAL_DB_FILE   = "/Users/user/Desktop/Temp/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
@@ -38,8 +39,6 @@ class Config:
 
         self.TEST_DATA              = "data/test_data"
         self.TRAIN_DATA             = "data/train_data"
-
-        self.TRAINING_WINDOW        = 4 # in seconds
 
         # Improve the verbosity
         self.ENABLE_PRINT           = 0
@@ -57,6 +56,10 @@ class Config:
         self.BATCH_SIZE = 64
 
         self.CSV_FILE   = "data/model_details.csv"
+
+        # UNET parameters
+        self.UNET_INPUT_SIZE = 3
+        self.UNET_OUTPUT_SIZE = 3
 
 
 class NNCFG:
