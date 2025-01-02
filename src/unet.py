@@ -107,7 +107,3 @@ class uNet(nn.Module):
         x = self.up_layers[-1](x)
 
         return x
-
-        
-
-
