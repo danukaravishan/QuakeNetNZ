@@ -38,6 +38,10 @@ def test(cfg):
       model = DNN(model_id=nncfg.model_id)
    elif cfg.MODEL_TYPE == MODEL_TYPE.CNN:
       model = PWaveCNN(model_id=nncfg.model_id, window_size=cfg.SAMPLE_WINDOW_SIZE)
+   elif cfg.MODEL_TYPE == MODEL_TYPE.UNET:
+      model = UNet(model_id=nncfg.model_id, in_channels=cfg.UNET_INPUT_SIZE, out_channels=cfg.UNET_OUTPUT_SIZE)
+   else:
+      raise ValueError(f"Invalid model type: {cfg.MODEL_TYPE}")
 
    model.load_state_dict(checkpoint['model_state_dict'])
    model.eval()

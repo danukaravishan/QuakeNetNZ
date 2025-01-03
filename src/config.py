@@ -49,7 +49,7 @@ class Config:
         # EdgeImpulse support
         self.EDGE_IMPULSE_CSV_PATH = "data/EdgeImpulseCSV/"
 
-        self.TEST_DATA_SPLIT_RATIO = 0.2
+        self.TEST_DATA_SPLIT_RATIO = 0.8
         self.IS_SPLIT_DATA         = True
 
         # ML model settings

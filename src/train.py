@@ -1,6 +1,7 @@
 from utils import *
 from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE, NNCFG
+from unet import uNet
 
 def _train(model, dataloader, optimizer, criterion, epoch_iter=50):
 
@@ -8,9 +9,11 @@ def _train(model, dataloader, optimizer, criterion, epoch_iter=50):
    for epoch in range(epoch_iter):
       epoch_loss = 0
       for batch_X, batch_y in dataloader:
+         
          optimizer.zero_grad()
          output = model(batch_X)
-         loss = criterion(output.squeeze(), batch_y)
+         # loss = criterion(output.squeeze(), batch_y)
+         loss = criterion(output, batch_y)
          loss.backward()
          optimizer.step()
          epoch_loss+= loss.item()
@@ -59,6 +62,13 @@ def train(cfg):
       #criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
       criterion = nn.BCEWithLogitsLoss()
+      model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
+   
+   elif cfg.MODEL_TYPE == MODEL_TYPE.UNET:
+      model = uNet(in_channels=3, out_channels = 3).to(device)
+      # As they have used BCEWithLogitsLoss in the paper, I am using the same
+      criterion = nn.BCEWithLogitsLoss()
+      optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
       model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
 
    

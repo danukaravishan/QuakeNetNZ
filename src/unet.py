@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from datetime import datetime
 
 class conv1x1(nn.Module):
     """
@@ -55,7 +56,7 @@ class UpSampling(nn.Module):
 
     def forward(self, x, skip_x):
         x = F.relu(self.upsample(x))
-        x = torch.cat(x, skip_x, dim= 1)
+        x = torch.cat((x, skip_x), dim= 1)
         x = F.relu(self.conv(x))
         return x
 
@@ -66,7 +67,7 @@ class uNet(nn.Module):
         Input: 3x200(3 channels(E=East,N=North,Z=Vertical), 50x4 samples)
         Output: 3x200(Probabilities for P-pick, S-pick and noise)
     """
-    def __init__(self, in_channels=3, out_channels=3):
+    def __init__(self, in_channels=3, out_channels=3, model_id=""):
         super(uNet, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -75,6 +76,9 @@ class uNet(nn.Module):
         self.up_channels = self.down_channels[::-1]
 
         self.down_layers = nn.ModuleList()
+
+        # Model ID with timestamp if not provided
+        self.model_id = "unet_" + datetime.now().strftime("%Y%m%d_%H%M") if model_id == "" else model_id
 
         # Down Sampling Layers
         for i in range(len(self.down_channels)):
