@@ -9,9 +9,12 @@ def _train(model, dataloader, optimizer, criterion, epoch_iter=50):
    for epoch in range(epoch_iter):
       epoch_loss = 0
       for batch_X, batch_y in dataloader:
-         
+         # print(f"Batch X shape: {batch_X.shape}, Batch Y shape: {batch_y.shape}")
          optimizer.zero_grad()
          output = model(batch_X)
+         output = torch.mean(output, dim=2)
+         # Debug: Check output and target shapes
+         # print(f"Output shape: {output.shape}, Target shape: {batch_y.shape}")
          # loss = criterion(output.squeeze(), batch_y)
          loss = criterion(output, batch_y)
          loss.backward()
@@ -30,6 +33,7 @@ def train(cfg):
    nncfg = NNCFG()
    nncfg.argParser()
 
+   # print(cfg.TRAIN_DATA)
    hdf5_file = h5py.File(cfg.TRAIN_DATA, 'r')
    p_data, s_data, noise_data = getWaveData(cfg, hdf5_file)
    
@@ -66,8 +70,8 @@ def train(cfg):
    
    elif cfg.MODEL_TYPE == MODEL_TYPE.UNET:
       model = uNet(in_channels=3, out_channels = 3).to(device)
-      # As they have used BCEWithLogitsLoss in the paper, I am using the same
-      criterion = nn.BCEWithLogitsLoss()
+      # As they have used cross-entropy in the paper, I am using the same
+      criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
       model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
 
