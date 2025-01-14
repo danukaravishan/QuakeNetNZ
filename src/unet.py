@@ -7,7 +7,7 @@ class conv1x1(nn.Module):
     """
         Two 1x1 convolutional layer with relu Activation
     """
-    def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, padding=0):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0):
         super(conv1x1, self).__init__()
         self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size, stride, padding)
         self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size, stride, padding)
@@ -24,7 +24,7 @@ class lastconv1x1(nn.Module):
     """
         1x1 convolutional layer with and softmax Activation
     """
-    def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, padding=0):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0):
         super(lastconv1x1, self).__init__()
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, stride, padding)
         
@@ -42,7 +42,7 @@ class DownSampling(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=2, padding_down=1):
         super(DownSampling, self).__init__()
         self.downsample = nn.Conv1d(in_channels, in_channels ,kernel_size, stride, padding=padding_down)
-        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size= 1, stride =1, padding=0)
+        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, stride =1, padding=0)
 
     def forward(self, x):
         # print(f"Input size before downsampling- x shape: {x.shape}")
@@ -60,7 +60,7 @@ class UpSampling(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=2, padding_up=1):
         super(UpSampling, self).__init__()
         self.upsample = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride, padding=padding_up)
-        self.conv = nn.Conv1d(out_channels*2, out_channels, kernel_size= 1, stride =1, padding=0)
+        self.conv = nn.Conv1d(out_channels*2, out_channels, kernel_size, stride =1, padding=0)
 
     def pad_tensor(self, x, skip_x):
         target_size = skip_x.size()[2]

@@ -65,7 +65,7 @@ class Config:
 class NNCFG:
     def __init__(self):
         self.learning_rate          = 0.001
-        self.epoch_count            = 2
+        self.epoch_count            = 4
         self.batch_size             = 32
 
         self.adam_beta1             = 0.1
