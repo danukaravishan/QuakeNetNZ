@@ -11,7 +11,7 @@ def _train(model, dataloader, optimizer, criterion, epoch_iter=50):
       for batch_X, batch_y in dataloader:
          # print(f"Batch X shape: {batch_X.shape}, Batch Y shape: {batch_y.shape}")
          optimizer.zero_grad()
-         output = model(batch_X)
+         output = model(batch_X) 
          output = torch.mean(output, dim=2)
          # Debug: Check output and target shapes
          # print(f"Output shape: {output.shape}, Target shape: {batch_y.shape}")

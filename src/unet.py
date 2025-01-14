@@ -39,7 +39,7 @@ class DownSampling(nn.Module):
         Down Sampling with Convolution and Max Pooling
         Convolution + Stride + Relu Activation
     """
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=2, padding_down=1, padding_conv=3//2):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=2, padding_down=1):
         super(DownSampling, self).__init__()
         self.downsample = nn.Conv1d(in_channels, in_channels ,kernel_size, stride, padding=padding_down)
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size= 1, stride =1, padding=0)
@@ -57,7 +57,7 @@ class UpSampling(nn.Module):
         Up Sampling with Convolution and Upsample
         Convolution + Stride + Relu Activation
     """
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=2, padding_up=1, padding_conv = 3//2 ):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=2, padding_up=1):
         super(UpSampling, self).__init__()
         self.upsample = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride, padding=padding_up)
         self.conv = nn.Conv1d(out_channels*2, out_channels, kernel_size= 1, stride =1, padding=0)
