@@ -29,7 +29,7 @@ class Config:
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
         self.MODEL_FILE_NAME    = "models/model_default.pt" # default model name : model_default.pt. If this is changed, new name will considered as the model_name for testing
-        self.MODEL_PATH         = "/Users/weijithwimalasiri/Documents/QuakeNetNZ/models/"
+        self.MODEL_PATH         = "models/"
 
         # Below parameters are used in extract_db script to extract certain window in database
         self.DATABASE_FILE  = "data/waveforms_4s_new_full.hdf5" # Overide if file alreay exist
@@ -38,7 +38,7 @@ class Config:
         self.BASE_SAMPLING_RATE     = 50
 
         self.TEST_DATA              = "data/test_data"
-        self.TRAIN_DATA             = "/Users/weijithwimalasiri/Documents/QuakeNetNZ/data/train_data"
+        self.TRAIN_DATA             = "data/train_data"
 
         # Improve the verbosity
         self.ENABLE_PRINT           = 0
