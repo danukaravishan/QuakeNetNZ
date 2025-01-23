@@ -50,10 +50,10 @@ def split_data():
     # Test dataset
     test_dataset_file = cfg.TEST_DATA
 
-    if os.path.isfile(train_dataset_file):
-        os.remove(train_dataset_file)
-    if os.path.isfile(test_dataset_file):
-        os.remove(test_dataset_file)
+    # Remove existing train and test files if they exist
+    for file in [train_dataset_file, test_dataset_file]:
+        if os.path.isfile(file):
+            os.remove(file)
 
     with h5py.File(cfg.DATABASE_FILE, 'r') as hdf_file:
         
@@ -76,7 +76,7 @@ def split_data():
                 group = hdf_file[group_name]  # Load the entire dataset for this group
                 
                 count = 0
-                split_index = int(0.8 * len(group))
+                split_index = int(cfg.TEST_DATA_SPLIT_RATIO * len(group))
 
                 for event_id in group.keys():
                     data = group.get(event_id)
