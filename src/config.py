@@ -14,6 +14,7 @@ class MODEL_TYPE(Enum):
     DNN = 1
     CNN = 2
     RNN = 3
+    UNET = 4
 
 ## This class has all the configurations that control the scripts
 class Config:
@@ -22,7 +23,7 @@ class Config:
         #set program mode
         self.MODE               = MODE_TYPE.ALL
 
-        self.MODEL_TYPE         = MODEL_TYPE.CNN
+        self.MODEL_TYPE         = MODEL_TYPE.UNET
         # File paths
         self.ORIGINAL_DB_FILE   = "/Users/user/Desktop/Temp/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
@@ -39,8 +40,6 @@ class Config:
         self.TEST_DATA              = "data/test_data"
         self.TRAIN_DATA             = "data/train_data"
 
-        self.TRAINING_WINDOW        = 4 # in seconds
-
         # Improve the verbosity
         self.ENABLE_PRINT           = 0
 
@@ -50,7 +49,7 @@ class Config:
         # EdgeImpulse support
         self.EDGE_IMPULSE_CSV_PATH = "data/EdgeImpulseCSV/"
 
-        self.TEST_DATA_SPLIT_RATIO = 0.2
+        self.TEST_DATA_SPLIT_RATIO = 0.8
         self.IS_SPLIT_DATA         = True
 
         # ML model settings
@@ -58,11 +57,15 @@ class Config:
 
         self.CSV_FILE   = "data/model_details.csv"
 
+        # UNET parameters
+        self.UNET_INPUT_SIZE = 3
+        self.UNET_OUTPUT_SIZE = 3
+
 
 class NNCFG:
     def __init__(self):
         self.learning_rate          = 0.001
-        self.epoch_count            = 2
+        self.epoch_count            = 4
         self.batch_size             = 32
 
         self.adam_beta1             = 0.1
