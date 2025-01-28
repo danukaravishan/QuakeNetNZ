@@ -69,10 +69,10 @@ def extract_data(cfg=None):
         else:
             positive_group_p = hdf['positive_samples_p']
 
-        #if "positive_samples_s" not in hdf:
-        #    positive_group_s = hdf.create_group('positive_samples_s')
-        #else:
-        #    positive_group_s = hdf['positive_samples_s']
+        if "positive_samples_s" not in hdf:
+            positive_group_s = hdf.create_group('positive_samples_s')
+        else:
+            positive_group_s = hdf['positive_samples_s']
 
         if "negative_sample_group" not in hdf:
             negative_group = hdf.create_group('negative_sample_group')
@@ -82,14 +82,14 @@ def extract_data(cfg=None):
         count = 0
         downsample_factor = 1
 
-        split_index = int(0.8 * len(hdf5_file.keys()))
+        #split_index = int(0.8 * len(hdf5_file.keys()))
         
         for event_id in hdf5_file.keys():
             #print(event_id)
 
-            if (count < split_index):
-                count +=1
-                continue
+            #if (count < split_index):
+            #    count +=1
+            #    continue
 
             dataset = hdf5_file.get(event_id)
             data = np.array(dataset)
@@ -120,20 +120,26 @@ def extract_data(cfg=None):
             count +=1
             
             window_size = int(cfg.TRAINING_WINDOW * sampling_rate)
-            # p_data  = extract_wave_window(data, p_arrival_index, window_size)
-            # s_data = extract_wave_window(data, s_arrival_index, window_size)
-            # noise_data = extract_noise_window(data, window_size, p_arrival_index)
+            p_data  = extract_wave_window(data, p_arrival_index, window_size)
+            s_data = extract_wave_window(data, s_arrival_index, window_size)
+            noise_data = extract_noise_window(data, window_size, p_arrival_index)
             
-            p_data  = extract_30s_wave_window(data, p_arrival_index, cfg.SHIFT_WINDOW, sampling_rate)
-            noise_data = extract_30s_wave_window(data, p_arrival_index, -5, sampling_rate)
+            # Enable below two lines to create 30 second shift databases
+            #p_data  = extract_30s_wave_window(data, p_arrival_index, cfg.SHIFT_WINDOW, sampling_rate)
+            #noise_data = extract_30s_wave_window(data, p_arrival_index, -5, sampling_rate)
 
-            if ((len(p_data[0]) != window_size) or (len(noise_data[0]) != window_size)):
+            if ( (len(p_data[0]) != window_size) or (len(s_data[0]) != window_size) or (len(noise_data[0]) != window_size)):
                 print("Wrong data  ====== : "+event_id)
                 continue
 
             ## Add data to each groups
             if event_id not in positive_group_p:
                 positive_p_dataset = positive_group_p.create_dataset(event_id, data=p_data)
+            else:
+                print(f"Dataset {event_id} already exists in positive_samples_p. Skipping.")
+
+            if event_id not in positive_group_s:
+                positive_s_dataset = positive_group_s.create_dataset(event_id, data=s_data)
             else:
                 print(f"Dataset {event_id} already exists in positive_samples_p. Skipping.")
 
@@ -153,8 +159,8 @@ def extract_data(cfg=None):
                 negative_group[event_id].attrs[key] = value
                 # Change the wave start time, samppling rate and other changed attributes
 
-            ## Tempory check
-            if count > split_index + 100:
-                break
+            ## Testing only
+            #if count > split_index + 100:
+            #    break
 
     print ("Number of records " + str(count))
