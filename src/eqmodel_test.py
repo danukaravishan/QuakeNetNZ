@@ -82,7 +82,7 @@ def exec():
     extract_data(cfg)
 
     model = sbm.PhaseNet.from_pretrained("original", update=True)
-    #model.cuda()  
+    #model.cuda()
     TP, FP, TN, FN = eval(model, cfg)
 
     print(f"TP = {TP}, FP = {FP}, TN = {TN}, FN = {FN}")
