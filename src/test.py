@@ -38,9 +38,16 @@ def test(cfg):
       model = DNN(model_id=nncfg.model_id)
    elif cfg.MODEL_TYPE == MODEL_TYPE.CNN:
       model = PWaveCNN(model_id=nncfg.model_id, window_size=cfg.SAMPLE_WINDOW_SIZE)
+<<<<<<< HEAD
    elif cfg.MODEL_TYPE == MODEL_TYPE.CRED:
       assert("This routine is yet to be implemented")
       model = sbm.PhaseNet(phases="PSN", norm="peak")
+=======
+   elif cfg.MODEL_TYPE == MODEL_TYPE.UNET:
+      model = UNet(model_id=nncfg.model_id, in_channels=cfg.UNET_INPUT_SIZE, out_channels=cfg.UNET_OUTPUT_SIZE)
+   else:
+      raise ValueError(f"Invalid model type: {cfg.MODEL_TYPE}")
+>>>>>>> 3f4dcd8778f3d7a8e0f2ee6db6a7dde204f08e96
 
    model.load_state_dict(checkpoint['model_state_dict'])
    model.eval()
