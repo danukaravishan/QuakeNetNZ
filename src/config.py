@@ -12,11 +12,18 @@ class MODE_TYPE(Enum):
     HYPER_PARAM    = 7
 
 class MODEL_TYPE(Enum):
+<<<<<<< HEAD
     DNN      = 1
     CNN      = 2
     RNN      = 3
     PhaseNet = 4
     CRED     = 5
+=======
+    DNN = 1
+    CNN = 2
+    RNN = 3
+    UNET = 4
+>>>>>>> 3f4dcd8778f3d7a8e0f2ee6db6a7dde204f08e96
 
 ## This class has all the configurations that control the scripts
 class Config:
@@ -25,7 +32,7 @@ class Config:
         #set program mode
         self.MODE               = MODE_TYPE.EXTRACT_DATA
 
-        self.MODEL_TYPE         = MODEL_TYPE.CNN
+        self.MODEL_TYPE         = MODEL_TYPE.UNET
         # File paths
         self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
@@ -54,7 +61,7 @@ class Config:
         # EdgeImpulse support
         self.EDGE_IMPULSE_CSV_PATH = "data/EdgeImpulseCSV/"
 
-        self.TEST_DATA_SPLIT_RATIO = 0.2
+        self.TEST_DATA_SPLIT_RATIO = 0.8
         self.IS_SPLIT_DATA         = True
 
         # ML model settings
@@ -74,11 +81,19 @@ class Config:
         self.SHIFT_WINDOW         = args.shift_window if args.shift_window is not None else self.SHIFT_WINDOW
         self.DATA_EXTRACTED_FILE  = f"data/waveform_{self.TRAINING_WINDOW}_{self.SHIFT_WINDOW}s_data.hdf5"
 
+        # UNET parameters
+        self.UNET_INPUT_SIZE = 3
+        self.UNET_OUTPUT_SIZE = 3
+
 
 class NNCFG:
     def __init__(self):
         self.learning_rate          = 0.001
+<<<<<<< HEAD
         self.epoch_count            = 5
+=======
+        self.epoch_count            = 4
+>>>>>>> 3f4dcd8778f3d7a8e0f2ee6db6a7dde204f08e96
         self.batch_size             = 32
 
         self.adam_beta1             = 0.1
