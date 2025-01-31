@@ -12,20 +12,21 @@ class MODE_TYPE(Enum):
     HYPER_PARAM    = 7
 
 class MODEL_TYPE(Enum):
-    DNN      = 1
-    CNN      = 2
-    RNN      = 3
-    PhaseNet = 4
-    CRED     = 5
+    DNN         = 1
+    CNN         = 2
+    RNN         = 3
+    PhaseNet    = 4
+    CRED        = 5
+    MobileNet1D = 6
 
 ## This class has all the configurations that control the scripts
 class Config:
     def __init__(self):
         
         #set program mode
-        self.MODE               = MODE_TYPE.EXTRACT_DATA
+        self.MODE               = MODE_TYPE.ALL
 
-        self.MODEL_TYPE         = MODEL_TYPE.CNN
+        self.MODEL_TYPE         = MODEL_TYPE.MobileNet1D
         # File paths
         self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"

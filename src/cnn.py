@@ -54,3 +54,35 @@ class PWaveCNN(nn.Module):
         x = self.fc2(x)            # Output layer
         return x
 
+
+class MobileNet1D(nn.Module):
+    def __init__(self, model_id=""):
+        super(MobileNet1D, self).__init__()
+        self.num_classes = 2
+        input_channels   =3
+        # Initial convolution
+        self.conv1 = nn.Conv1d(input_channels, 32, kernel_size=3, stride=2, padding=1)
+        self.bn1 = nn.BatchNorm1d(32)
+        
+        # Depthwise separable convolutions
+        self.dw_conv1 = nn.Conv1d(32, 32, kernel_size=3, groups=32, stride=1, padding=1)
+        self.pw_conv1 = nn.Conv1d(32, 64, kernel_size=1, stride=1)
+        self.bn2 = nn.BatchNorm1d(64)
+        
+        self.dw_conv2 = nn.Conv1d(64, 64, kernel_size=3, groups=64, stride=2, padding=1)
+        self.pw_conv2 = nn.Conv1d(64, 128, kernel_size=1, stride=1)
+        self.bn3 = nn.BatchNorm1d(128)
+
+        # Global average pooling and classification
+        self.global_pool = nn.AdaptiveAvgPool1d(1)  # Reduces time dimension to 1
+        self.fc = nn.Linear(128, self.num_classes)
+        self.model_id = "mobilenet_" + datetime.now().strftime("%Y%m%d_%H%M") if model_id == "" else model_id
+
+    def forward(self, x):
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.pw_conv1(self.dw_conv1(x))))
+        x = F.relu(self.bn3(self.pw_conv2(self.dw_conv2(x))))
+        x = self.global_pool(x)  # Shape: (batch_size, 128, 1)
+        x = torch.flatten(x, 1)  # Shape: (batch_size, 128)
+        x = self.fc(x)  # Shape: (batch_size, num_classes)
+        return x
