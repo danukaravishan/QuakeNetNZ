@@ -69,7 +69,7 @@ def train(cfg):
       model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
    
    elif cfg.MODEL_TYPE == MODEL_TYPE.UNET:
-      model = uNet(in_channels=3, out_channels = 3).to(device)
+      model = uNet(in_channels=3, out_channels = 1).to(device)
       # Since the task is about Binary Classification, BCELoss function was used.
       criterion = nn.BCELoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
