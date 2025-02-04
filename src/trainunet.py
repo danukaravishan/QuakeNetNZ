@@ -9,45 +9,14 @@ def _train(model, dataloader, optimizer, criterion, threshold= 0.4, epoch_iter=5
    for epoch in range(epoch_iter):
       epoch_loss = 0
       for batch_X, batch_y in dataloader:
-         # print(f"Batch X shape: {batch_X.shape}, Batch Y shape: {batch_y.shape}")
          optimizer.zero_grad()
-         output = model(batch_X) # 32, 3 ,200
-         #assert output.requires_grad, "Model output does not require gradients!"
-         #print("threshold:", threshold)
-         #print("Output Max:", output[:,1].max().item())
-         # Print model output values
-         #print("Output values:", output)
-         #print("Output shape:", output.shape)
-         #print("Output data type:", output.dtype)
-         # output = torch.mean(output, dim=2)
-         # Thresholding the output
-         # print("Output [1] values:", output[:,1])
-         # exceeds_threshold = output[:, 1] > threshold
-         # print("Exceeds threshold:", exceeds_threshold)
-         p_exceeds = torch.any(output[:, 1] > threshold, dim=1)
-         # print("P exceeds:", p_exceeds)
-         # print("Output [2] values:", output[:,2])
-         s_exceeds = torch.any(output[:, 2] > threshold, dim=1)
-         # print("S exceeds:", s_exceeds)
-         outputs = torch.where(torch.logical_or(p_exceeds, s_exceeds), 
-                              torch.tensor(1.0, device = output.device), 
-                              torch.tensor(0.0, device = output.device))
-         # outputs = torch.logical_or(p_exceeds, s_exceeds).float()
-         # outputs = (output[:, 1] > threshold) | (output[:, 2] > threshold)
-         # outputs = outputs.float()
-         # Debug: Check output and target shapes
-         #print(f"Outputs shape: {outputs.shape}, Target shape: {batch_y.shape}")
-         # Print model output values
-         #print("Output values:", outputs)
-         #print("Output shape:", outputs.shape)
-         #print("Output data type:", outputs.dtype)
-         # loss = criterion(output.squeeze(), batch_y)
-         batch_y= batch_y.float()
-         #print("Batch Y values:", batch_y)
-         #print("Batch Y shape:", batch_y.shape)
-         #print("Batch Y data type:", batch_y.dtype)
-         loss = criterion(outputs, batch_y)
-         loss.requires_grad_(True)
+         output = model(batch_X)
+         # Squeeze the output from (32,1,200) -> (32,200)
+         output = output.squeeze()
+         # Label for the whole sequence rather than per sample label
+         output = torch.mean(output, dim=1)
+         # print(f'Output ; {output}')
+         loss = criterion(output.squeeze(), batch_y)
          loss.backward()
          optimizer.step()
          epoch_loss+= loss.item()
@@ -100,10 +69,9 @@ def train(cfg):
       model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
    
    elif cfg.MODEL_TYPE == MODEL_TYPE.UNET:
-      model = uNet(in_channels=3, out_channels = 3).to(device)
-      # As they have used cross-entropy in the paper, I am using the same
-      # criterion = nn.CrossEntropyLoss()
-      criterion = nn.BCEWithLogitsLoss()
+      model = uNet(in_channels=3, out_channels = 1).to(device)
+      # Since the task is about Binary Classification, BCELoss function was used.
+      criterion = nn.BCELoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
       model, train_losses = _train(model, dataloader, optimizer, criterion, epoch_iter=nncfg.epoch_count)
 
