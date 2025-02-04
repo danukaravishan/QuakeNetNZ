@@ -11,7 +11,9 @@ def _train(model, dataloader, optimizer, criterion, threshold= 0.4, epoch_iter=5
       for batch_X, batch_y in dataloader:
          optimizer.zero_grad()
          output = model(batch_X)
+         # Squeeze the output from (32,1,200) -> (32,200)
          output = output.squeeze()
+         # Label for the whole sequence rather than per sample label
          output = torch.mean(output, dim=1)
          # print(f'Output ; {output}')
          loss = criterion(output.squeeze(), batch_y)
