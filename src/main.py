@@ -1,6 +1,6 @@
 from utils import *
 from config import Config, MODE_TYPE
-from train import train, hyper_param_opt
+from train import train
 from test import test
 from extract_window_db import extract_data
 from database_op import split_data

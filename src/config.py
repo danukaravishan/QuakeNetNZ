@@ -12,27 +12,21 @@ class MODE_TYPE(Enum):
     HYPER_PARAM    = 7
 
 class MODEL_TYPE(Enum):
-<<<<<<< HEAD
-    DNN      = 1
-    CNN      = 2
-    RNN      = 3
-    PhaseNet = 4
-    CRED     = 5
-=======
-    DNN = 1
-    CNN = 2
-    RNN = 3
-    UNET = 4
->>>>>>> 3f4dcd8778f3d7a8e0f2ee6db6a7dde204f08e96
+    DNN         = 1
+    CNN         = 2
+    RNN         = 3
+    PhaseNet    = 4
+    CRED        = 5
+    MobileNet1D = 6
+
 
 ## This class has all the configurations that control the scripts
 class Config:
     def __init__(self):
         
         #set program mode
-        self.MODE               = MODE_TYPE.EXTRACT_DATA
-
-        self.MODEL_TYPE         = MODEL_TYPE.UNET
+        self.MODE               = MODE_TYPE.ALL
+        self.MODEL_TYPE         = MODEL_TYPE.MobileNet1D
         # File paths
         self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
@@ -89,13 +83,8 @@ class Config:
 class NNCFG:
     def __init__(self):
         self.learning_rate          = 0.001
-<<<<<<< HEAD
         self.epoch_count            = 5
-=======
-        self.epoch_count            = 4
->>>>>>> 3f4dcd8778f3d7a8e0f2ee6db6a7dde204f08e96
         self.batch_size             = 32
-
         self.adam_beta1             = 0.1
         self.adam_beta2             = 0.1
         self.adam_gamma             = 0.1
