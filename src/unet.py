@@ -7,7 +7,7 @@ class conv1x1(nn.Module):
     """
         Two 1x1 convolutional layer with relu Activation
     """
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
         super(conv1x1, self).__init__()
         self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size, stride, padding)
         self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size, stride, padding)
@@ -24,13 +24,13 @@ class lastconv1x1(nn.Module):
     """
         1x1 convolutional layer with and softmax Activation
     """
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
         super(lastconv1x1, self).__init__()
         self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, stride, padding)
         
     def forward(self, x):
         # print("Last Convolution")
-        x = F.softmax(self.conv(x), dim=1)
+        x = F.sigmoid(self.conv(x))
         # print(f"After last convolution - x shape: {x.shape}")
         return x
     
@@ -42,7 +42,7 @@ class DownSampling(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=2, padding_down=1):
         super(DownSampling, self).__init__()
         self.downsample = nn.Conv1d(in_channels, in_channels ,kernel_size, stride, padding=padding_down)
-        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, stride =1, padding=0)
+        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, stride =1, padding=1)
 
     def forward(self, x):
         # print(f"Input size before downsampling- x shape: {x.shape}")
@@ -60,7 +60,7 @@ class UpSampling(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=2, padding_up=1):
         super(UpSampling, self).__init__()
         self.upsample = nn.ConvTranspose1d(in_channels, out_channels, kernel_size, stride, padding=padding_up)
-        self.conv = nn.Conv1d(out_channels*2, out_channels, kernel_size, stride =1, padding=0)
+        self.conv = nn.Conv1d(out_channels*2, out_channels, kernel_size, stride =1, padding=1)
 
     def pad_tensor(self, x, skip_x):
         target_size = skip_x.size()[2]
@@ -94,7 +94,7 @@ class uNet(nn.Module):
         Input: 3x200(3 channels(E=East,N=North,Z=Vertical), 50x4 samples)
         Output: 3x200(Probabilities for P-pick, S-pick and noise)
     """
-    def __init__(self, in_channels=3, out_channels=3, model_id=""):
+    def __init__(self, in_channels=3, out_channels=1, model_id=""):
         super(uNet, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -124,7 +124,6 @@ class uNet(nn.Module):
         for i in range(len(self.down_channels)-1):
             ins = self.up_channels[i]
             outs = self.up_channels[i+1]
-            # print("Hey I am there")
             self.up_layers.append(UpSampling(in_channels=ins, out_channels=outs))
         self.up_layers.append(lastconv1x1(in_channels=self.up_channels[-1], out_channels=self.out_channels))
     
