@@ -26,7 +26,7 @@ class Config:
         
         #set program mode
         self.MODE               = MODE_TYPE.ALL
-        self.MODEL_TYPE         = MODEL_TYPE.MobileNet1D
+        self.MODEL_TYPE         = MODEL_TYPE.CNN
         # File paths
         self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
