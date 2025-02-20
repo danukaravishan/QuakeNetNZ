@@ -18,6 +18,7 @@ def test(cfg):
    
    print("Runnig for test set")
    nncfg = NNCFG()
+   nncfg.argParser()
 
    if cfg.MODEL_FILE_NAME == "models/model_default.pt":
       model_name = getLatestModelName(cfg)
@@ -36,7 +37,7 @@ def test(cfg):
    if cfg.MODEL_TYPE == MODEL_TYPE.DNN:
       model = DNN(model_id=nncfg.model_id)
    elif cfg.MODEL_TYPE == MODEL_TYPE.CNN:
-      model = PWaveCNN(model_id=nncfg.model_id, window_size=cfg.SAMPLE_WINDOW_SIZE)
+      model = PWaveCNN(model_id=nncfg.model_id, window_size=cfg.SAMPLE_WINDOW_SIZE, conv1_filters=nncfg.conv1_size, conv2_filters=nncfg.conv2_size, fc1_neurons=nncfg.fc1_size, kernel_size=nncfg.kernal_size)
    elif cfg.MODEL_TYPE == MODEL_TYPE.CRED:
       assert("This routine is yet to be implemented")
       model = sbm.PhaseNet(phases="PSN", norm="peak")

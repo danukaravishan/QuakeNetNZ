@@ -96,6 +96,12 @@ class NNCFG:
         self.optimizer              = None
         self.model_id               = None
 
+        # CNN Model size parameters
+        self.conv1_size            = 16
+        self.conv2_size            = 16
+        self.fc1_size              = 16
+        self.kernal_size           = 5
+
 
     def argParser(self):
         parser = argparse.ArgumentParser()
@@ -110,6 +116,12 @@ class NNCFG:
         parser.add_argument('--adam_gamma', type=float, help='Gamma of Adam optimizer')
         parser.add_argument('--detection_threshold', type=float, help='Detection threshold of when one output neuron exist')
 
+        parser.add_argument('--conv1_size', type=float, help='size of the conv1 layer')
+        parser.add_argument('--conv2_size', type=float, help='size of the conv2 layer')
+        parser.add_argument('--fc1_size', type=float, help='size of the fully connected layer')
+
+        parser.add_argument('--kernal_size', type=float, help='size of the kernal size of the conv layers')
+
         args = parser.parse_args()
 
         self.learning_rate   = args.learning_rate   if args.learning_rate is not None else self.learning_rate
@@ -121,5 +133,11 @@ class NNCFG:
         self.adam_gamma     = args.adam_gamma if args.adam_gamma is not None else self.adam_gamma
 
         self.detection_threshold = args.detection_threshold if args.detection_threshold is not None else self.detection_threshold
+
+        self.conv1_size     = int(args.conv1_size) if args.conv1_size is not None else self.conv1_size
+        self.conv2_size     = int(args.conv2_size) if args.conv2_size is not None else self.conv2_size
+        self.fc1_size       = int(args.fc1_size) if args.fc1_size is not None else self.fc1_size
+
+        self.kernal_size    = int(args.kernal_size) if args.kernal_size is not None else self.kernal_size
 
         print(f"Training Hyperparameter : Learning Rate = {self.learning_rate}, Epoch count = {self.epoch_count}, Batch Size = {self.batch_size}") # Add others upon on the requirement
