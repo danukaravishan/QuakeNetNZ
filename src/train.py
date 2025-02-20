@@ -53,7 +53,7 @@ def train(cfg):
 
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
-      model = PWaveCNN(cfg.SAMPLE_WINDOW_SIZE).to(device)
+      model = PWaveCNN(window_size=cfg.SAMPLE_WINDOW_SIZE, conv1_filters=nncfg.conv1_size, conv2_filters=nncfg.conv2_size, fc1_neurons=nncfg.fc1_size, kernel_size=nncfg.kernal_size).to(device)
       criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
       model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
