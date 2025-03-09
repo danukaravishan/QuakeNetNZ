@@ -1,10 +1,38 @@
 from utils import *
+from scipy.signal import detrend, butter, filtfilt
 
-def highpass_filter():
-    print("High Pass Filter the data")
 
-def normalize():
-    print("Normalise")
+def demean(signal):
+    """Remove the mean from the signal."""
+    return signal - np.mean(signal)
+
+def apply_detrend(signal):
+    """Remove linear trends from the signal."""
+    return detrend(signal)
+
+def bandpass_filter(signal, lowcut=1.0, highcut=20.0, fs=100, order=4):
+    """
+    Apply a Butterworth bandpass filter.
+    
+    Parameters:
+    - signal: Input time series
+    - lowcut: Low cutoff frequency (Hz)
+    - highcut: High cutoff frequency (Hz)
+    - fs: Sampling frequency (Hz)
+    - order: Filter order
+    """
+    nyquist = 0.5 * fs  # Nyquist frequency
+    low = lowcut / nyquist
+    high = highcut / nyquist
+    b, a = butter(order, [low, high], btype='band')
+    return filtfilt(b, a, signal)
+
+def normalize(signal):
+    """Normalize the signal between -1 and 1."""
+    return (signal - np.min(signal)) / (np.max(signal) - np.min(signal)) * 2 - 1
+
+def pre_proc_data(data):
+    return np.array([normalize(bandpass_filter(apply_detrend(demean(sig)))) for sig in data])
 
 
 def numpy_to_stream(data):

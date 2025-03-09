@@ -15,17 +15,14 @@ def loadModelConfig(nncfg, checkpoint):
    nncfg.val_acc  = checkpoint['validation_acc']
 
 
-def test(cfg): 
+def test(): 
    
    print("Runnig for test set")
+   cfg  = Config()
    nncfg = NNCFG()
    nncfg.argParser()
 
-   if cfg.MODEL_FILE_NAME == "models/model_default.pt":
-      model_name = getLatestModelName(cfg)
-      cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model_name
-   else:
-      print(f"Using the model:  {cfg.MODEL_FILE_NAME} for testing")
+   cfg.MODEL_FILE_NAME = "models/cnn_final.pt"
 
    if not os.path.isfile(cfg.MODEL_FILE_NAME):
       raise ValueError(f"No model found as :{cfg.MODEL_FILE_NAME}")
@@ -35,17 +32,8 @@ def test(cfg):
    checkpoint = torch.load(cfg.MODEL_FILE_NAME)
    loadModelConfig(nncfg, checkpoint)
 
-   if cfg.MODEL_TYPE == MODEL_TYPE.DNN:
-      model = DNN(model_id=nncfg.model_id)
-   elif cfg.MODEL_TYPE == MODEL_TYPE.CNN:
-      model = PWaveCNN(model_id=nncfg.model_id, window_size=cfg.SAMPLE_WINDOW_SIZE, conv1_filters=nncfg.conv1_size, conv2_filters=nncfg.conv2_size, fc1_neurons=nncfg.fc1_size, kernel_size1=nncfg.kernal_size1, kernel_size2=nncfg.kernal_size2)
-   elif cfg.MODEL_TYPE == MODEL_TYPE.CRED:
-      assert("This routine is yet to be implemented")
-      model = sbm.PhaseNet(phases="PSN", norm="peak")
-   elif cfg.MODEL_TYPE == MODEL_TYPE.UNET:
-      model = UNet(model_id=nncfg.model_id, in_channels=cfg.UNET_INPUT_SIZE, out_channels=cfg.UNET_OUTPUT_SIZE)
-   else:
-      raise ValueError(f"Invalid model type: {cfg.MODEL_TYPE}")
+
+   model = PWaveCNN(model_id=nncfg.model_id, window_size=cfg.SAMPLE_WINDOW_SIZE, conv1_filters=nncfg.conv1_size, conv2_filters=nncfg.conv2_size, fc1_neurons=nncfg.fc1_size, kernel_size1=nncfg.kernal_size1, kernel_size2=nncfg.kernal_size2)
    
    model.load_state_dict(checkpoint['model_state_dict'])
    model.eval()
@@ -85,4 +73,4 @@ def test(cfg):
       print("Testing completed successfully")
 
 
-
+test()
