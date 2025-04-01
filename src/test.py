@@ -71,11 +71,12 @@ def test(cfg):
    with torch.no_grad():  # Disable gradients during inference
       predictions = model(test_tensor)
 
-   predicted_classes = torch.argmax(predictions, dim=1)
-   #predicted_classes = ((predictions >= 0.9).int()).squeeze() # Use detection threshold as 0.5 
-   
+   predicted_classes = (predictions > nncfg.detection_threshold)
+   #predicted_classes = torch.argmax(predictions, dim=1)
+
    #Calculate the accuracy. This is tempory calculation
    true_tensor = torch.tensor(true_vrt, dtype=torch.long) 
+   predicted_classes = predicted_classes.squeeze()
    
    assert (predicted_classes.shape == true_tensor.shape)
 

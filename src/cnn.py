@@ -78,7 +78,7 @@ class PWaveCNN(nn.Module):
         
         # Fully connected layers
         self.fc1 = nn.Linear(conv2_filters * conv2_out_size, fc1_neurons)
-        self.fc2 = nn.Linear(fc1_neurons, 2)  # Binary classification output
+        self.fc2 = nn.Linear(fc1_neurons, 1)  # Binary classification output
         
         # Model ID
         random_tag = str(secrets.randbelow(9000) + 1000)
@@ -93,5 +93,5 @@ class PWaveCNN(nn.Module):
 
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = F.sigmoid(self.fc2(x))
         return x

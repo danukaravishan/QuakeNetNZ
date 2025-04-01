@@ -54,10 +54,13 @@ def _train(model, dataloader, val_loader, optimizer, criterion, epoch_iter=50):
             else:
                   batch_y = batch_y.view(-1)  # Ensures it's 1D
 
-            loss = criterion(outputs, batch_y)
+            loss = criterion(outputs.squeeze(), batch_y)
             val_loss += loss.item()
 
-            _, predicted = torch.max(outputs, 1)  # Get predicted class index
+            #_, predicted = torch.max(outputs, 1)  # Get predicted class index
+
+            predicted = (outputs > 0.5)
+            predicted = predicted.squeeze()
             total += batch_y.size(0)  
             correct += (predicted == batch_y).sum().item()
 
@@ -91,7 +94,7 @@ def train(cfg):
    X = np.concatenate([positive_data, noise_data], axis=0)
    Y = np.array([1] * len(positive_data) + [0] * len(noise_data))  # 1 for P wave, 0 for noise
 
-   dataset = TensorDataset(torch.tensor(X, dtype=torch.float32), torch.tensor(Y, dtype=torch.long))
+   dataset = TensorDataset(torch.tensor(X, dtype=torch.float32), torch.tensor(Y, dtype=torch.float))
 
    train_size = int(0.875 * len(dataset))
    val_size = len(dataset) - train_size
@@ -106,7 +109,8 @@ def train(cfg):
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
       model = PWaveCNN(window_size=cfg.SAMPLE_WINDOW_SIZE, conv1_filters=nncfg.conv1_size, conv2_filters=nncfg.conv2_size, fc1_neurons=nncfg.fc1_size, kernel_size1=nncfg.kernal_size1, kernel_size2=nncfg.kernal_size2, dropout1=nncfg.dropout1, dropout2=nncfg.dropout2, dropout3=nncfg.dropout3).to(device)
-      criterion = nn.CrossEntropyLoss()
+      #criterion = nn.CrossEntropyLoss()
+      criterion = nn.BCELoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
       model, train_losses, val_loss, val_acc = _train(model, dataloader, val_loader, optimizer, criterion, nncfg.epoch_count)
 
