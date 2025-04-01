@@ -3,6 +3,7 @@
 
 from utils import *
 from config import *
+import pandas as pd
 
 def extract_wave_window(data, wave_index, window_size):
     half_window = window_size // 2 
@@ -56,7 +57,15 @@ def extract_data(cfg=None):
     if cfg is None:
         cfg = Config()
 
-    hdf5_file = h5py.File(cfg.ORIGINAL_DB_FILE, 'r')
+    # db_path = "E:\GeoNet_Earthquake_Dataset\waveforms_units_2013.h5"
+    # csv_path = r"E:\GeoNet_Earthquake_Dataset\full_metadata.csv"
+
+    db_path = r"D:\Temp\waveforms_units_2013.h5"
+    csv_path = r"D:\Temp\full_metadata.csv"
+
+    metadata_df = pd.read_csv(csv_path)
+    
+    hdf5_file = h5py.File(db_path, 'r')
 
     if os.path.isfile(cfg.DATA_EXTRACTED_FILE):
         os.remove(cfg.DATA_EXTRACTED_FILE)
@@ -83,39 +92,65 @@ def extract_data(cfg=None):
         downsample_factor = 1
 
         #split_index = int(0.8 * len(hdf5_file.keys()))
-        
-        for event_id in hdf5_file.keys():
-            #print(event_id)
+        data_group = hdf5_file["data"]
+        for trace_name in data_group.keys():
+            print(str(count) + "  " + trace_name)
 
             #if (count < split_index):
             #    count +=1
             #    continue
 
-            dataset = hdf5_file.get(event_id)
+            dataset = data_group.get(trace_name)
             data = np.array(dataset)
 
-            p_arrival_index = int(dataset.attrs["p_arrival_sample"])
-            s_arrival_index = int(dataset.attrs["s_arrival_sample"])
+            event_metadata = metadata_df[metadata_df["trace_name"] == trace_name]
 
-            sampling_rate = int(dataset.attrs["sampling_rate"])
-
-            p_wave_picktime = UTCDateTime(dataset.attrs["p_wave_picktime"])
-            s_wave_picktime = UTCDateTime(dataset.attrs["s_wave_picktime"])
-
-            wave_time_diff = s_wave_picktime - p_wave_picktime
-
-            if wave_time_diff < 0.2:
+            if event_metadata.empty:
+                print("No event metadata is available")
+                count+=1
                 continue
 
-            if sampling_rate != cfg.BASE_SAMPLING_RATE:
-                # Add code to resample to 50
-                #print(sampling_rate) 
-                data_resampled = downsample(data, cfg.BASE_SAMPLING_RATE, sampling_rate)
-                data = data_resampled
-                downsample_factor = int(sampling_rate // cfg.BASE_SAMPLING_RATE)
-                p_arrival_index = int(p_arrival_index/downsample_factor)
-                s_arrival_index = int(s_arrival_index/downsample_factor)
-                sampling_rate = cfg.BASE_SAMPLING_RATE
+            p_arrival_index = event_metadata["trace_p_arrival_sample"].values[0]
+            if p_arrival_index:
+                p_arrival_index = int(p_arrival_index) if pd.notna(p_arrival_index) else None
+            else:
+                print(f" {trace_name} Skipped due to unavailability of P pick time")
+                count+=1
+                continue
+
+            s_arrival_index = event_metadata["trace_s_arrival_sample"].values[0]
+
+            if s_arrival_index:
+                s_arrival_index = int(s_arrival_index) if pd.notna(s_arrival_index) else None
+            else:
+                print(f" {trace_name} Skipped due to unavailability of S pick time")
+                count+=1
+                continue
+
+            if p_arrival_index is None or s_arrival_index is None:
+                print(f" {trace_name} Skipped due to unavailability of P/S pick time")
+                count+=1
+                continue
+            
+            sampling_rate = 100
+
+            #p_wave_picktime = UTCDateTime(event_metadata["trace_p_arrival_time"].values[0])
+            #s_wave_picktime = UTCDateTime(event_metadata["trace_s_arrival_time"].values[0])
+
+            #wave_time_diff = s_wave_picktime - p_wave_picktime
+
+            #if wave_time_diff < 0.2:
+            #    continue
+
+            # if sampling_rate != cfg.BASE_SAMPLING_RATE:
+            #     # Add code to resample to 50
+            #     #print(sampling_rate) 
+            #     data_resampled = downsample(data, cfg.BASE_SAMPLING_RATE, sampling_rate)
+            #     data = data_resampled
+            #     downsample_factor = int(sampling_rate // cfg.BASE_SAMPLING_RATE)
+            #     p_arrival_index = int(p_arrival_index/downsample_factor)
+            #     s_arrival_index = int(s_arrival_index/downsample_factor)
+            #     sampling_rate = cfg.BASE_SAMPLING_RATE
             
             count +=1
             
@@ -129,34 +164,34 @@ def extract_data(cfg=None):
             #noise_data = extract_30s_wave_window(data, p_arrival_index, -5, sampling_rate)
 
             if ( (len(p_data[0]) != window_size) or (len(s_data[0]) != window_size) or (len(noise_data[0]) != window_size)):
-                print("Wrong data  ====== : "+event_id)
+                print("Wrong data  ====== : "+trace_name)
                 continue
 
             ## Add data to each groups
-            if event_id not in positive_group_p:
-                positive_p_dataset = positive_group_p.create_dataset(event_id, data=p_data)
+            if trace_name not in positive_group_p:
+                positive_p_dataset = positive_group_p.create_dataset(trace_name, data=p_data)
             else:
-                print(f"Dataset {event_id} already exists in positive_samples_p. Skipping.")
+                print(f"Dataset {trace_name} already exists in positive_samples_p. Skipping.")
 
-            if event_id not in positive_group_s:
-                positive_s_dataset = positive_group_s.create_dataset(event_id, data=s_data)
+            if trace_name not in positive_group_s:
+                positive_s_dataset = positive_group_s.create_dataset(trace_name, data=s_data)
             else:
-                print(f"Dataset {event_id} already exists in positive_samples_p. Skipping.")
+                print(f"Dataset {trace_name} already exists in positive_samples_p. Skipping.")
 
             #if event_id not in positive_group_s:
             #    positive_s_dataset = positive_group_s.create_dataset(event_id, data=s_data)
             #else:
             #    print(f"Dataset {event_id} already exists in positive_samples_s. Skipping.")
 
-            if event_id not in negative_group:
-                negative_dataset = negative_group.create_dataset(event_id, data=noise_data)
+            if trace_name not in negative_group:
+                negative_dataset = negative_group.create_dataset(trace_name, data=noise_data)
             else:
-                print(f"Dataset {event_id} already exists in negative_group. Skipping.")
+                print(f"Dataset {trace_name} already exists in negative_group. Skipping.")
 
             for key, value in dataset.attrs.items():
-                positive_group_p[event_id].attrs[key] = value
+                positive_group_p[trace_name].attrs[key] = value
                 #positive_group_s[event_id].attrs[key] = value
-                negative_group[event_id].attrs[key] = value
+                negative_group[trace_name].attrs[key] = value
                 # Change the wave start time, samppling rate and other changed attributes
 
             ## Testing only
@@ -164,3 +199,6 @@ def extract_data(cfg=None):
             #    break
 
     print ("Number of records " + str(count))
+
+if __name__ == "__main__":
+    extract_data()

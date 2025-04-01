@@ -18,9 +18,10 @@ import uuid
 import matplotlib.pyplot as plt
 
 ## ML libraries
-from cnn import PWaveCNN
+from cnn import PWaveCNN, MobileNet1D
 from dnn import DNN
 from dnn import InitWeights
+from cred import CRED
 from unet import uNet
 from torch.utils.data import DataLoader, TensorDataset
 import torch
@@ -31,3 +32,7 @@ from report   import *
 # Signal processing
 import scipy 
 import scipy.signal as signal
+
+
+# Seisbench 
+import seisbench.models as sbm

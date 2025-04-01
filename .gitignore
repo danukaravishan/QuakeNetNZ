@@ -8,6 +8,14 @@ data/train_data
 data/test_data
 
 models/*
+run.sh
+data/model_details.csv
+data/eqtest_models.csv
+
+data_backup/*
+
+nohup.out
+output.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
