@@ -10,7 +10,7 @@ def apply_detrend(signal):
     """Remove linear trends from the signal."""
     return detrend(signal)
 
-def bandpass_filter(signal, lowcut=1.0, highcut=20.0, fs=100, order=4):
+def bandpass_filter(signal, lowcut=1.0, highcut=20.0, fs=50, order=4):
     """
     Apply a Butterworth bandpass filter.
     

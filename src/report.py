@@ -130,7 +130,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
     pdf_filename = cfg.MODEL_PATH + model.model_id + ".pdf"
     pdf.output(pdf_filename)
     print(f"Write output to {pdf_filename}")    
-    #addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters)
+    addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters)
 
 
 def find_latest_file(directory, prefix, extension):
