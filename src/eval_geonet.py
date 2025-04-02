@@ -47,6 +47,7 @@ p_data = pre_proc_data(p_data)
 s_data = pre_proc_data(s_data)
 noise_data = pre_proc_data(noise_data)
 
+nncfg = NNCFG()
 
 # Open HDF5 file and iterate through all waveforms
 with h5py.File(hdf5_file, 'r') as hdf:
@@ -61,36 +62,36 @@ with h5py.File(hdf5_file, 'r') as hdf:
         if data.shape[0] != 3:
             print(f"Skipping {event_id}: Expected 3 channels, found {data.shape[0]}")
             continue
-
+        
         # Get total samples and time duration
         total_samples = data.shape[1]
         total_seconds = total_samples / sampling_rate
         timestamps = np.arange(0, total_seconds, 1 / sampling_rate)
 
         # Apply sliding window inference
-        outputs = []
         time_preds = []
 
-        out1 = []
-        out2 = []
+        raw_output = []
+        classified_output = []
+
 
         for start in range(0, total_samples - window_size + 1, stride):
             segment = data[:, start:start + window_size]  # (3, 100)
             segment = pre_proc_data(segment)
             input_tensor = torch.tensor(segment, dtype=torch.float32).unsqueeze(0)  # (1, 3, 100)
             output = model(input_tensor)
-            logit_diff =  output[0, 0] - output[0, 1]
+
+            cl_out = output > nncfg.detection_threshold
 
             #predicted_class = torch.argmax(output, dim=1).item()
 
-            outputs.append(logit_diff.item())  # Negate the class output
+            classified_output.append(cl_out.item())  # Negate the class output
+            raw_output.append(output.item())
             time_preds.append(start / sampling_rate)
 
-            out1.append(output[0, 0].item())
-            out2.append(output[0, 1].item())
 
         # Convert to NumPy array
-        outputs = np.array(outputs)
+        classified_output = np.array(classified_output)
 
         # PLOTTING
         fig, axes = plt.subplots(3, 1, figsize=(12, 6), sharex=True)
@@ -111,16 +112,16 @@ with h5py.File(hdf5_file, 'r') as hdf:
         # Plot model predictions
         #axes[1].plot(time_preds, normalized_outputs, color="k", label="Model Predictions", linestyle="dashed", marker="o")
         
-        axes[1].vlines(time_preds, ymin=0, ymax=out1, color="k", linewidth=1)
-        axes[1].plot(time_preds, out1, 'o', color="k", markersize=3, label="Model Predictions- noise")
+        axes[1].vlines(time_preds, ymin=0, ymax=classified_output, color="k", linewidth=1)
+        axes[1].plot(time_preds, classified_output, 'o', color="k", markersize=3, label="Model Predictions- noise")
 
         axes[1].legend()
         axes[1].set_xlabel("Time (seconds)")
         axes[1].set_ylabel("Prediction (scaled)")
         axes[1].set_title("Model Predictions Over Time")
 
-        axes[2].vlines(time_preds, ymin=0, ymax=out2, color="k", linewidth=1)
-        axes[2].plot(time_preds, out2, 'o', color="r", markersize=3, label="Model Predictions- earthquake")
+        axes[2].vlines(time_preds, ymin=0, ymax=raw_output, color="k", linewidth=1)
+        axes[2].plot(time_preds, raw_output, 'o', color="r", markersize=3, label="Model Predictions- earthquake")
 
         plt.suptitle(f"Waveform and QuakeNetNZ Predictions - Event {event_id}")
         plt.show()
