@@ -23,7 +23,7 @@ def plot_comparison(segment, test_sample, type1, type2):
 # Load the pre-trained TorchScript model
 cfg = Config()
 
-model = torch.jit.load(cfg.MODEL_FILE_NAME + "_ts.pt")
+model = torch.jit.load(cfg.MODEL_FILE_NAME)
 model.eval()
 
 # Path to HDF5 file
@@ -88,7 +88,6 @@ with h5py.File(hdf5_file, 'r') as hdf:
             classified_output.append(cl_out.item())  # Negate the class output
             raw_output.append(output.item())
             time_preds.append(start / sampling_rate)
-
 
         # Convert to NumPy array
         classified_output = np.array(classified_output)

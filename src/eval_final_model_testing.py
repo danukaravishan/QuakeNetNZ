@@ -61,7 +61,7 @@ def general_eval():
    # Convert to tensor
    test_tensor = torch.tensor(test_vtr, dtype=torch.float32)
 
-   model = torch.jit.load(cfg.MODEL_FILE_NAME+"_ts.pt")
+   model = torch.jit.load(cfg.MODEL_FILE_NAME)
    model.eval()
 
    # with torch.no_grad():  # Disable gradients during inference

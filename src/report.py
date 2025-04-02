@@ -51,7 +51,7 @@ def plot_loss(train_losses, val_losses, val_accs, file_name):
     # Save and show the figure
     image_filename = f"{file_name}.jpg"
     plt.savefig(image_filename)
-    plt.show()
+    #plt.show()
 
     print(f"Loss and accuracy curves saved as {image_filename}")
 

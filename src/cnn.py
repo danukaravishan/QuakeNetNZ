@@ -52,7 +52,7 @@ class MobileNet1D(nn.Module):
 
 
 class PWaveCNN(nn.Module):
-    def __init__(self, window_size, conv1_filters=12, conv2_filters=2, dropout1=0.1 , dropout2=0.1, dropout3=0.1, fc1_neurons=18, kernel_size1=4, kernel_size2=4, model_id=""):
+    def __init__(self, window_size, conv1_filters=24, conv2_filters=4, dropout1=0.1 , dropout2=0.1, dropout3=0.1, fc1_neurons=20, kernel_size1=4, kernel_size2=4, model_id=""):
         
         # Base
         # conv1_filters=8

@@ -31,16 +31,16 @@ class Config:
         self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
-        self.MODEL_FILE_NAME    = "models/model_default.pt" # default model name : model_default.pt. If this is changed, new name will considered as the model_name for testing
+        self.MODEL_FILE_NAME    = "models/cnn_20250401_0216_9867.pt_ts.pt" # default model name : model_default.pt. If this is changed, new name will considered as the model_name for testing
         self.MODEL_PATH         = "models/"
 
         # Below parameters are used in extract_db script to extract certain window in database
-        self.DATABASE_FILE  = "data/waveforms_4s_new_full.hdf5" # Overide if file alreay exist
+        self.DATABASE_FILE  = "data/waveform_2s_data.hdf5" # Overide if file alreay exist
         self.ORIGINAL_SAMPLING_RATE = 50 # Most of the data points are in this category. Hence choosing as the base sampling rate
         self.TRAINING_WINDOW        = 2 # in seconds
         self.BASE_SAMPLING_RATE     = 50
         self.SHIFT_WINDOW           = 10
-        self.DATA_EXTRACTED_FILE    = f"data/waveform_{self.TRAINING_WINDOW}_{self.SHIFT_WINDOW}s_data.hdf5"
+        self.DATA_EXTRACTED_FILE    = f"data/waveform_2s_data.hdf5"
         
 
         self.TEST_DATA              = "data/test_data"
@@ -73,7 +73,6 @@ class Config:
         args = parser.parse_args()
 
         self.SHIFT_WINDOW         = args.shift_window if args.shift_window is not None else self.SHIFT_WINDOW
-        self.DATA_EXTRACTED_FILE  = f"data/waveform_{self.TRAINING_WINDOW}_{self.SHIFT_WINDOW}s_data.hdf5"
 
         # UNET parameters
         self.UNET_INPUT_SIZE = 3
@@ -83,7 +82,7 @@ class Config:
 class NNCFG:
     def __init__(self):
         self.learning_rate          = 0.001
-        self.epoch_count            = 5
+        self.epoch_count            = 2
         self.batch_size             = 32
         self.adam_beta1             = 0.1
         self.adam_beta2             = 0.1

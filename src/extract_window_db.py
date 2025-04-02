@@ -3,6 +3,79 @@
 
 from utils import *
 from config import *
+import scipy.signal
+
+def generate_noise(noise_type, shape, sampling_rate=50):
+    if noise_type == "gaussian":
+        return np.random.normal(0, 0.001, shape)  # Mean 0, Std 0.01
+    
+    elif noise_type == "uniform":
+        return np.random.uniform(-0.01, 0.001, shape)  # Uniform noise between -0.01 and 0.01
+
+    elif noise_type == "pink":
+        return generate_pink_noise(shape)
+
+    elif noise_type == "brownian":
+        return generate_brownian_noise(shape)
+
+    else:
+        raise ValueError("Unknown noise type!")
+
+def generate_pink_noise(shape):
+    # Create a filter for pink noise
+    white_noise = np.random.normal(0, 1, shape)
+    b, a = scipy.signal.butter(1, 0.1, 'low')
+    return scipy.signal.filtfilt(b, a, white_noise) * 0.01
+
+def generate_brownian_noise(shape):
+    noise = np.cumsum(np.random.normal(0, 0.001, shape), axis=1)  # Accumulated random steps 
+    return noise
+
+
+
+def extract_noise_from_stead():
+
+    chunk_file = "data/STEAD/chunk.hdf5"
+    csv_file = "data/STEAD/merged.csv"
+    
+    df = pd.read_csv(csv_file)
+    df = df[(df.trace_category == 'noise') & (df.receiver_code == 'PHOB')]
+
+    # Ensure we have enough samples
+    if len(df) < 50000:
+        raise ValueError("Not enough noise samples available!")
+
+    # Randomly select 50,000 trace names
+    ev_list = df['trace_name'].sample(n=50000, random_state=42).to_list()
+
+    # Open HDF5 file
+    dtfl = h5py.File(chunk_file, 'r')
+
+    # Initialize array to store waveforms
+    noise_data = np.zeros((50000, 100, 3))
+
+    # Extract data
+    for i, evi in enumerate(ev_list):
+        dataset = dtfl.get(f'data/{evi}')
+        if dataset is None:
+            continue  # Skip if dataset is missing
+
+        data = np.array(dataset)  # Shape: (T, 3), where T is time samples
+
+        if data.shape[0] < 100:
+            continue  # Skip if not enough samples
+
+        noise_data[i] = data[:100, :]  # Take first 100 samples
+
+    # Close HDF5 file
+    dtfl.close()
+
+    # Save the NumPy array (optional)
+    np.save("data/STEAD/noise_samples.npy", noise_data)
+
+    # Print shape to verify
+    print("Extracted noise data shape:", noise_data.shape)  # Expected: (50000, 100, 3)
+
 
 def extract_wave_window(data, wave_index, window_size):
     half_window = window_size // 2 
@@ -119,14 +192,33 @@ def extract_data(cfg=None):
             
             count +=1
             
-            window_size = int(cfg.TRAINING_WINDOW * sampling_rate)
-            p_data  = extract_wave_window(data, p_arrival_index, window_size)
-            s_data = extract_wave_window(data, s_arrival_index, window_size)
-            noise_data = extract_noise_window(data, window_size, p_arrival_index)
+            ## Give temporal shift to the data
+            SHIFT_RANGE_SEC = 0.5  # Max shift in seconds (±0.5 sec)
+            NOISE_MEAN = 0  # Gaussian noise mean
+            NOISE_STD = 0.0001  # Gaussian noise std deviation
             
-            # Enable below two lines to create 30 second shift databases
-            #p_data  = extract_30s_wave_window(data, p_arrival_index, cfg.SHIFT_WINDOW, sampling_rate)
-            #noise_data = extract_30s_wave_window(data, p_arrival_index, -5, sampling_rate)
+            shift_samples = int(SHIFT_RANGE_SEC * sampling_rate)
+            random_shifts_p = np.random.randint(-shift_samples, shift_samples + 1)
+            random_shifts_s = np.random.randint(-shift_samples, shift_samples + 1)
+
+            # Modify P and S indices
+            new_p_indices = np.clip(p_arrival_index + random_shifts_p, 0, len(data[0]) - 1)
+            new_s_indices = np.clip(s_arrival_index + random_shifts_s, 0, len(data[0]) - 1)
+
+
+            # Extract wave data
+            window_size = int(cfg.TRAINING_WINDOW * sampling_rate)
+            p_data  = extract_wave_window(data, new_p_indices, window_size)
+            s_data = extract_wave_window(data, new_s_indices, window_size)
+            noise_data = extract_noise_window(data, window_size, p_arrival_index)
+
+            if np.random.choice([True, False]):
+                noise_data += np.random.normal(NOISE_MEAN, NOISE_STD, noise_data.shape)
+            
+            noise_types = ["gaussian", "uniform", "pink", "brownian"]
+            selected_noise = np.random.choice(noise_types) 
+            synthetic_noise = generate_noise(selected_noise, noise_data.shape)
+
 
             if ( (len(p_data[0]) != window_size) or (len(s_data[0]) != window_size) or (len(noise_data[0]) != window_size)):
                 print("Wrong data  ====== : "+event_id)
@@ -150,6 +242,7 @@ def extract_data(cfg=None):
 
             if event_id not in negative_group:
                 negative_dataset = negative_group.create_dataset(event_id, data=noise_data)
+                negative_dataset = negative_group.create_dataset(event_id+"_syn", data=synthetic_noise)
             else:
                 print(f"Dataset {event_id} already exists in negative_group. Skipping.")
 
