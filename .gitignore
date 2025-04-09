@@ -14,8 +14,11 @@ data/eqtest_models.csv
 
 data_backup/*
 
+temp.py
+
 nohup.out
 output.log
+*.npy
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -180,6 +180,10 @@ def extract_data(cfg=None):
             if wave_time_diff < 0.2:
                 continue
 
+            # Only consider the reciords where epicentral distance is less than  100km
+            if dataset.attrs["epicentral_distance"] > 100:
+                continue
+
             if sampling_rate != cfg.BASE_SAMPLING_RATE:
                 # Add code to resample to 50
                 #print(sampling_rate) 
