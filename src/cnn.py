@@ -68,13 +68,13 @@ class PWaveCNN(nn.Module):
         self.conv2 = nn.Conv1d(conv1_filters, conv2_filters, kernel_size2)
         
         # Pooling layers
-        self.maxpool = nn.MaxPool1d(2)  # Max pooling with kernel size 2
+        #self.maxpool = nn.MaxPool1d(2)  # Max pooling with kernel size 2
         #self.maxpool2 = nn.MaxPool1d(2)  # Max pooling with kernel size 2
-        self.minpool = lambda x: -F.max_pool1d(-x, 2)  # Min pooling using negation trick
+        #self.minpool = lambda x: -F.max_pool1d(-x, 2)  # Min pooling using negation trick
 
         # Compute output size after convolutions and pooling
-        conv1_out_size = (window_size - kernel_size1 + 1) // 2  # After max pool
-        conv2_out_size = (conv1_out_size - kernel_size2 + 1) //2 # After min pool
+        conv1_out_size = (window_size - kernel_size1 + 1)   # After max pool
+        conv2_out_size = (conv1_out_size - kernel_size2 + 1)  # After min pool
         
         # Fully connected layers
         self.fc1 = nn.Linear(conv2_filters * conv2_out_size, fc1_neurons)
@@ -86,10 +86,10 @@ class PWaveCNN(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
-        x = self.maxpool(x)  # Apply max pooling
+        #x = self.maxpool(x)  # Apply max pooling
 
         x = F.relu(self.conv2(x))
-        x = self.minpool(x)  # Apply min pooling
+        #x = self.minpool(x)  # Apply min pooling
 
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
