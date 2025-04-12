@@ -134,6 +134,8 @@ def extract_data(cfg=None):
     if os.path.isfile(cfg.DATA_EXTRACTED_FILE):
         os.remove(cfg.DATA_EXTRACTED_FILE)
 
+    stead_noise_data = np.load("stead_samples_80000.npy")
+
     with h5py.File(cfg.DATA_EXTRACTED_FILE, 'a') as hdf:
         
         # Create database groups
@@ -154,15 +156,11 @@ def extract_data(cfg=None):
 
         count = 0
         downsample_factor = 1
+        stead_noise_index = 0
 
         #split_index = int(0.8 * len(hdf5_file.keys()))
         
         for event_id in hdf5_file.keys():
-            #print(event_id)
-
-            #if (count < split_index):
-            #    count +=1
-            #    continue
 
             dataset = hdf5_file.get(event_id)
             data = np.array(dataset)
@@ -181,12 +179,13 @@ def extract_data(cfg=None):
                 continue
 
             # Only consider the reciords where epicentral distance is less than  100km
-            if dataset.attrs["epicentral_distance"] > 100:
+            if dataset.attrs["magnitude"] < 5 and  dataset.attrs["epicentral_distance"] > 100:
+                continue
+
+            if dataset.attrs["epicentral_distance"] > 150:
                 continue
 
             if sampling_rate != cfg.BASE_SAMPLING_RATE:
-                # Add code to resample to 50
-                #print(sampling_rate) 
                 data_resampled = downsample(data, cfg.BASE_SAMPLING_RATE, sampling_rate)
                 data = data_resampled
                 downsample_factor = int(sampling_rate // cfg.BASE_SAMPLING_RATE)
@@ -198,8 +197,6 @@ def extract_data(cfg=None):
             
             ## Give temporal shift to the data
             SHIFT_RANGE_SEC = 0.5  # Max shift in seconds (±0.5 sec)
-            NOISE_MEAN = 0  # Gaussian noise mean
-            NOISE_STD = 0.0001  # Gaussian noise std deviation
             
             shift_samples = int(SHIFT_RANGE_SEC * sampling_rate)
             random_shifts_p = np.random.randint(-shift_samples, shift_samples + 1)
@@ -209,22 +206,29 @@ def extract_data(cfg=None):
             new_p_indices = np.clip(p_arrival_index + random_shifts_p, 0, len(data[0]) - 1)
             new_s_indices = np.clip(s_arrival_index + random_shifts_s, 0, len(data[0]) - 1)
 
-
             # Extract wave data
             window_size = int(cfg.TRAINING_WINDOW * sampling_rate)
             p_data  = extract_wave_window(data, new_p_indices, window_size)
             s_data = extract_wave_window(data, new_s_indices, window_size)
             noise_data = extract_noise_window(data, window_size, p_arrival_index)
 
+            # if np.random.choice([True, False]):
+            #     noise_data += np.random.normal(NOISE_MEAN, NOISE_STD, noise_data.shape)
+
+            # noise_types = ["gaussian", "uniform", "pink", "brownian"]
+            # selected_noise = np.random.choice(noise_types)
+            # synthetic_noise = generate_noise(selected_noise, noise_data.shape)
+
+            stead_noise_sample = stead_noise_data[stead_noise_index]
+            stead_noise_index  += 1
+
+            NOISE_MEAN = 0  # Gaussian noise mean
+            NOISE_STD = 0.00001  # Gaussian noise std deviation
+          
             if np.random.choice([True, False]):
-                noise_data += np.random.normal(NOISE_MEAN, NOISE_STD, noise_data.shape)
-            
-            noise_types = ["gaussian", "uniform", "pink", "brownian"]
-            selected_noise = np.random.choice(noise_types) 
-            synthetic_noise = generate_noise(selected_noise, noise_data.shape)
+                stead_noise_sample += np.random.normal(NOISE_MEAN, NOISE_STD, stead_noise_sample.shape)
 
-
-            if ( (len(p_data[0]) != window_size) or (len(s_data[0]) != window_size) or (len(noise_data[0]) != window_size)):
+            if ( (len(p_data[0]) != window_size) or (len(s_data[0]) != window_size) or (len(noise_data[0]) != window_size) or (len(stead_noise_sample[0]) != window_size)):
                 print("Wrong data  ====== : "+event_id)
                 continue
 
@@ -239,14 +243,9 @@ def extract_data(cfg=None):
             else:
                 print(f"Dataset {event_id} already exists in positive_samples_p. Skipping.")
 
-            #if event_id not in positive_group_s:
-            #    positive_s_dataset = positive_group_s.create_dataset(event_id, data=s_data)
-            #else:
-            #    print(f"Dataset {event_id} already exists in positive_samples_s. Skipping.")
-
             if event_id not in negative_group:
                 negative_dataset = negative_group.create_dataset(event_id, data=noise_data)
-                negative_dataset = negative_group.create_dataset(event_id+"_syn", data=synthetic_noise)
+                negative_dataset = negative_group.create_dataset(event_id+"_stead", data=stead_noise_sample)
             else:
                 print(f"Dataset {event_id} already exists in negative_group. Skipping.")
 
@@ -256,8 +255,6 @@ def extract_data(cfg=None):
                 negative_group[event_id].attrs[key] = value
                 # Change the wave start time, samppling rate and other changed attributes
 
-            ## Testing only
-            #if count > split_index + 100:
-            #    break
+            print(f" {str(count)} : {event_id}")
 
     print ("Number of records " + str(count))
