@@ -9,12 +9,13 @@ data/test_data
 
 models/*
 run.sh
-data/model_details.csv
+data/model_details_backup.csv
 data/eqtest_models.csv
 
 data_backup/*
 
 temp.py
+run_eqtest.sh
 
 nohup.out
 output.log

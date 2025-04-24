@@ -1,2 +1,4 @@
-The best parameters are 
-{'conv1_filters': 32, 'conv2_filters': 10, 'fc1_neurons': 30, 'kernel_size': 7, 'learning_rate': 0.0010455743360158242, 'dropout': 0.1}
+
+Base model
+python src/main.py --learning_rate=0.002 --epoch_count=110 --batch_size=1024 --conv1_size=32 --conv2_size=32 --conv3_size=32 --fc1_size=44 --fc2_size=18
+

@@ -35,7 +35,7 @@ def _train(model, dataloader, val_loader, optimizer, criterion, epoch_iter=50):
 
       avg_epoch_loss = (epoch_loss/len(dataloader))
       train_losses.append(avg_epoch_loss)
-      print(f'Epoch {epoch+1}, Loss: {avg_epoch_loss}', end="")      
+      print(f'Epoch {epoch+1}, Loss: {avg_epoch_loss:.5f}', end="")      
       
       model.eval()  # Set model to evaluation mode
       val_loss = 0
@@ -66,7 +66,7 @@ def _train(model, dataloader, val_loader, optimizer, criterion, epoch_iter=50):
 
       val_losses.append(val_loss / len(val_loader))
       val_accuracies.append(100 * correct / total)
-      print(f'   Validation Accuracy : {100 * correct / total}')  
+      print(f'  Val_loss: {(val_loss / len(val_loader)):.5f},  Validation Accuracy : {(100 * correct / total):.5f}')  
 
    return model, train_losses, val_losses, val_accuracies 
 
@@ -77,8 +77,9 @@ def train(cfg):
    nncfg.argParser()
 
    hdf5_file = h5py.File(cfg.TRAIN_DATA, 'r')
+
    p_data, s_data, noise_data = getWaveData(cfg, hdf5_file)
-   
+    
    # Data preparation
    p_data = np.array(p_data)
    s_data = np.array(s_data)
@@ -88,37 +89,107 @@ def train(cfg):
    s_data = pre_proc_data(s_data)
    noise_data = pre_proc_data(noise_data)
 
+   ## Merge First 20% of test data into validation set
+   hdf5_file_test = h5py.File(cfg.TEST_DATA, 'r')
+   p_data_test, s_data_test, noise_data_test = getWaveData(cfg, hdf5_file_test)
 
+   p_data_test = np.array(p_data_test)
+   s_data_test = np.array(s_data_test)
+   noise_data_test = np.array(noise_data_test)
+
+   test_subset_len = int(0.2 * p_data_test.shape[0])
+
+   p_data_test = p_data_test[:test_subset_len]
+   s_data_test = s_data_test[:test_subset_len]
+   noise_data_test = noise_data_test[:test_subset_len*2]
+
+   p_data_test = pre_proc_data(p_data_test)
+   s_data_test = pre_proc_data(s_data_test)
+   noise_data_test = pre_proc_data(noise_data_test)
+   
+   ### 
    positive_data = np.concatenate((p_data , s_data))
-
    X = np.concatenate([positive_data, noise_data], axis=0)
    Y = np.array([1] * len(positive_data) + [0] * len(noise_data))  # 1 for P wave, 0 for noise
 
-   dataset = TensorDataset(torch.tensor(X, dtype=torch.float32), torch.tensor(Y, dtype=torch.float))
+   full_dataset = list(zip(X, Y))
+   random.Random(42).shuffle(full_dataset)
+   X, Y = zip(*full_dataset)
+   X = np.array(X)
+   Y = np.array(Y)
 
-   train_size = int(0.875 * len(dataset))
-   val_size = len(dataset) - train_size
-   train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+   # Allocate 10% of the train set to validation  set
+   train_size = int(0.9 * len(X))
+
+   X_train = X[:train_size]
+   Y_train = Y[:train_size]
+
+   X_val = X[train_size:]
+   Y_val = Y[train_size:]
+
+   X_test_val = np.concatenate([p_data_test, s_data_test, noise_data_test])
+   Y_test_val = np.array([1] * (len(p_data_test) + len(s_data_test)) + [0] * len(noise_data_test))
+
+   X_val = np.concatenate([X_val, X_test_val])
+   Y_val = np.concatenate([Y_val, Y_test_val])
+   #X_val = X_test_val
+   #Y_val = Y_test_val
+
+   train_loader = DataLoader(
+    TensorDataset(torch.tensor(X_train, dtype=torch.float32),
+                  torch.tensor(Y_train, dtype=torch.float)),
+    batch_size=nncfg.batch_size,
+    shuffle=True
+   )
    
-   val_loader = DataLoader(val_dataset, batch_size=nncfg.batch_size, shuffle=False)
-   dataloader = DataLoader(train_dataset, batch_size=nncfg.batch_size, shuffle=True)
+   val_loader = DataLoader(
+    TensorDataset(torch.tensor(X_val, dtype=torch.float32),
+                  torch.tensor(Y_val, dtype=torch.float)),
+    batch_size=nncfg.batch_size,
+    shuffle=False
+   )
+   
+   #dataset = TensorDataset(torch.tensor(X, dtype=torch.float32), torch.tensor(Y, dtype=torch.float))
+   #generator = torch.Generator().manual_seed(50)
+
+   #train_size = int(0.875 * len(dataset))
+   #val_size = len(dataset) - train_size
+   #train_dataset, val_dataset = random_split(dataset, [train_size, val_size], generator=generator)
+   
+   #val_loader = DataLoader(val_dataset, batch_size=nncfg.batch_size, shuffle=False)
+   #train_loader = DataLoader(train_dataset, batch_size=nncfg.batch_size, shuffle=True)
 
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
    model = None
 
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
-      model = PWaveCNN(window_size=cfg.SAMPLE_WINDOW_SIZE, conv1_filters=nncfg.conv1_size, conv2_filters=nncfg.conv2_size, fc1_neurons=nncfg.fc1_size, kernel_size1=nncfg.kernal_size1, kernel_size2=nncfg.kernal_size2, dropout1=nncfg.dropout1, dropout2=nncfg.dropout2, dropout3=nncfg.dropout3).to(device)
+      model = PWaveCNN( 
+         window_size=cfg.SAMPLE_WINDOW_SIZE, 
+         conv1_filters=nncfg.conv1_size, 
+         conv2_filters=nncfg.conv2_size, 
+         conv3_filters=nncfg.conv3_size, 
+         fc1_neurons=nncfg.fc1_size, 
+         fc2_neurons=nncfg.fc2_size, 
+         kernel_size1=nncfg.kernal_size1, 
+         kernel_size2=nncfg.kernal_size2, 
+         kernel_size3=nncfg.kernal_size3, 
+         dropout1=nncfg.dropout1, 
+         dropout2=nncfg.dropout2, 
+         dropout3=nncfg.dropout3
+      ).to(device)
+
       #criterion = nn.CrossEntropyLoss()
       criterion = nn.BCELoss()
-      optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
-      model, train_losses, val_loss, val_acc = _train(model, dataloader, val_loader, optimizer, criterion, nncfg.epoch_count)
+      optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate, weight_decay=nncfg.weight_decay)
+
+      model, train_losses, val_loss, val_acc = _train(model, train_loader, val_loader, optimizer, criterion, nncfg.epoch_count)
 
    elif (cfg.MODEL_TYPE == MODEL_TYPE.MobileNet1D):
       model = MobileNet1D().to(device)
       criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
-      model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
+      model, train_losses = _train(model, train_loader, optimizer, criterion, nncfg.epoch_count)
 
    elif cfg.MODEL_TYPE == MODEL_TYPE.DNN:
       model = DNN().to(device)
@@ -126,14 +197,14 @@ def train(cfg):
       #criterion = nn.CrossEntropyLoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
       criterion = nn.BCEWithLogitsLoss()
-      model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
+      model, train_losses = _train(model, train_loader, optimizer, criterion, nncfg.epoch_count)
 
    elif cfg.MODEL_TYPE == MODEL_TYPE.PhaseNet:
          model = sbm.PhaseNet(phases="PSN", norm="peak")
          #criterion = nn.CrossEntropyLoss()
          optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
          criterion = nn.BCEWithLogitsLoss()
-         model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
+         model, train_losses = _train(model, train_loader, optimizer, criterion, nncfg.epoch_count)
 
    elif cfg.MODEL_TYPE == MODEL_TYPE.CRED:
         # Define the CRED model
@@ -142,7 +213,7 @@ def train(cfg):
         model = CRED(input_shape=input_shape, filters=filters).to(device)
         criterion = nn.BCEWithLogitsLoss()  # Use Binary Cross-Entropy as we're doing binary classification
         optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
-        model, train_losses = _train(model, dataloader, optimizer, criterion, nncfg.epoch_count)
+        model, train_losses = _train(model, train_loader, optimizer, criterion, nncfg.epoch_count)
    
    cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model.model_id
 
@@ -181,7 +252,6 @@ def objective(trial):
    p_data = pre_proc_data(p_data)
    s_data = pre_proc_data(s_data)
    noise_data = pre_proc_data(noise_data)
-
 
    positive_data = np.concatenate((p_data , s_data))
 

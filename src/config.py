@@ -98,14 +98,18 @@ class NNCFG:
         # CNN Model size parameters
         self.conv1_size            = 16
         self.conv2_size            = 16
+        self.conv3_size            = 16
         self.fc1_size              = 16
+        self.fc2_size              = 16
         self.kernal_size1           = 4
         self.kernal_size2           = 4
+        self.kernal_size3           = 4
 
         self.dropout1              = 0.1
         self.dropout2              = 0.1
         self.dropout3              = 0.1
 
+        self.weight_decay          = 1e-3 
         self.val_acc               = None
 
 
@@ -124,15 +128,19 @@ class NNCFG:
 
         parser.add_argument('--conv1_size', type=float, help='size of the conv1 layer')
         parser.add_argument('--conv2_size', type=float, help='size of the conv2 layer')
-        parser.add_argument('--fc1_size', type=float, help='size of the fully connected layer')
+        parser.add_argument('--conv3_size', type=float, help='size of the conv3 layer')
+        parser.add_argument('--fc1_size', type=float, help='size of the fully connected layer 1')
+        parser.add_argument('--fc2_size', type=float, help='size of the fully connected layer 2')
 
         parser.add_argument('--kernal_size1', type=float, help='size of the kernal size of the conv1 layers')
         parser.add_argument('--kernal_size2', type=float, help='size of the kernal size of the conv2 layers')
+        parser.add_argument('--kernal_size3', type=float, help='size of the kernal size of the conv3 layers')
         
         parser.add_argument('--dropout1', type=float, help='dropout layer 1')
         parser.add_argument('--dropout2', type=float, help='dropout layer 2')
         parser.add_argument('--dropout3', type=float, help='dropout layer 3')
 
+        parser.add_argument('--L2_decal', type=float, help='L2 weight decay')
 
 
         args = parser.parse_args()
@@ -149,13 +157,16 @@ class NNCFG:
 
         self.conv1_size     = int(args.conv1_size) if args.conv1_size is not None else self.conv1_size
         self.conv2_size     = int(args.conv2_size) if args.conv2_size is not None else self.conv2_size
+        self.conv3_size     = int(args.conv3_size) if args.conv3_size is not None else self.conv3_size
         self.fc1_size       = int(args.fc1_size) if args.fc1_size is not None else self.fc1_size
+        self.fc2_size       = int(args.fc2_size) if args.fc2_size is not None else self.fc2_size
 
         self.kernal_size1    = int(args.kernal_size1) if args.kernal_size1 is not None else self.kernal_size1
         self.kernal_size2    = int(args.kernal_size2) if args.kernal_size2 is not None else self.kernal_size2
+        self.kernal_size3    = int(args.kernal_size3) if args.kernal_size3 is not None else self.kernal_size3
         
         self.dropout1       = float(args.dropout1) if args.dropout1 is not None else self.dropout1
         self.dropout2       = float(args.dropout2) if args.dropout2 is not None else self.dropout2
         self.dropout3       = float(args.dropout3) if args.dropout3 is not None else self.dropout3
 
-        print(f"Training Hyperparameter : Learning Rate = {self.learning_rate}, Epoch count = {self.epoch_count}, Batch Size = {self.batch_size}, conv1 = {self.conv1_size}, conv2 = {self.conv2_size}, FC1 {self.fc1_size}, CNN filter1 = {self.kernal_size1}, CNN filter2= {self.kernal_size2}") # Add others upon on the requirement
+        print(f"Training Hyperparameter : Learning Rate = {self.learning_rate}, Epoch count = {self.epoch_count}, Batch Size = {self.batch_size}, conv1 = {self.conv1_size}, conv2 = {self.conv2_size}, conv3 = {self.conv3_size}, fc1 {self.fc1_size}, fc2 {self.fc2_size} , CNN filter1 = {self.kernal_size1}, CNN filter2= {self.kernal_size2}, CNN filter3= {self.kernal_size3}") # Add others upon on the requirement
