@@ -102,7 +102,7 @@ class MobileNet1D(nn.Module):
 class PWaveCNN(nn.Module):
     def __init__(self, window_size, 
                  conv1_filters=48, conv2_filters=48, conv3_filters=16,
-                 dropout1=0.1 , dropout2=0.2, dropout3=0.2,
+                 dropout1=0.3 , dropout2=0.3, dropout3=0.2,
                  fc1_neurons=24, fc2_neurons=12,
                  kernel_size1=4, kernel_size2=4, kernel_size3=4,
                  model_id=""):
@@ -128,9 +128,9 @@ class PWaveCNN(nn.Module):
         # self.norm2 = nn.GroupNorm(num_groups=2, num_channels=conv2_filters)
         # self.norm3 = nn.GroupNorm(num_groups=2, num_channels=conv3_filters)
 
-        # self.dropout1 = nn.Dropout(p=dropout1)
-        # self.dropout2 = nn.Dropout(p=dropout2)
-        # self.dropout3 = nn.Dropout(p=dropout3)
+        self.dropout1 = nn.Dropout(p=dropout1)
+        self.dropout2 = nn.Dropout(p=dropout2)
+        #self.dropout3 = nn.Dropout(p=dropout3)
 
         # Fully connected layers
         self.fc1 = nn.Linear(conv3_filters * conv3_out, fc1_neurons)
@@ -145,12 +145,11 @@ class PWaveCNN(nn.Module):
         # Layer 1
         x = F.relu(self.conv1(x))
         #x = self.norm1(x)
-        #x = self.dropout1(x)
 
         # Layer 2
         x = F.relu(self.conv2(x))
         #x = self.norm2(x)
-        #x = self.dropout2(x)
+        x = self.dropout1(x)
 
         # Layer 3
         x = F.relu(self.conv3(x))
@@ -162,8 +161,9 @@ class PWaveCNN(nn.Module):
 
         # FC Layers
         x = F.relu(self.fc1(x))
-        #x = self.dropout2(x)  # reuse dropout2
+        x = self.dropout2(x)  # reuse dropout2
         x = F.relu(self.fc2(x))
+        
         x = torch.sigmoid(self.fc3(x))
 
         return x

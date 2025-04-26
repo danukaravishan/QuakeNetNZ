@@ -181,7 +181,7 @@ def train(cfg):
 
       #criterion = nn.CrossEntropyLoss()
       criterion = nn.BCELoss()
-      optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate, weight_decay=nncfg.weight_decay)
+      optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate, weight_decay=nncfg.l2_decay)
 
       model, train_losses, val_loss, val_acc = _train(model, train_loader, val_loader, optimizer, criterion, nncfg.epoch_count)
 

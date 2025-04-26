@@ -120,8 +120,11 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
     pdf.cell(200, 10, txt=f"Max val acc: {max(nncfg.val_acc):.4f}", ln=True, align='L')
     pdf.cell(200, 10, txt=f"Max val acc index: {nncfg.val_acc.index(max(nncfg.val_acc))}", ln=True, align='L')
 
-    param_txt = f" LR={nncfg.learning_rate}, Batch={nncfg.batch_size}, Epoch={nncfg.epoch_count}, c1={nncfg.conv1_size}, c2={nncfg.conv2_size}, c3={nncfg.conv3_size}, f1={nncfg.fc1_size}, f2={nncfg.fc2_size}, k1=={nncfg.kernal_size1}, k2={nncfg.kernal_size2}, k3={nncfg.kernal_size3}"
-    pdf.cell(200, 10, txt=param_txt, ln=True, align='L')
+    param_txt1 = f"LR={nncfg.learning_rate}, Batch={nncfg.batch_size}, Epoch={nncfg.epoch_count}, c1={nncfg.conv1_size}, c2={nncfg.conv2_size}, c3={nncfg.conv3_size}, f1={nncfg.fc1_size}, f2={nncfg.fc2_size}, k1=={nncfg.kernal_size1}, k2={nncfg.kernal_size2}, k3={nncfg.kernal_size3}"
+    pdf.cell(200, 10, txt=param_txt1, ln=True, align='L')
+
+    param_txt2 = f"L2_decay={nncfg.l2_decay}, droput1={nncfg.dropout1}, droput2={nncfg.dropout2}"
+    pdf.cell(200, 10, txt=param_txt2, ln=True, align='L')
 
     pdf_filename = cfg.MODEL_PATH + model.model_id + ".pdf"
     pdf.output(pdf_filename)

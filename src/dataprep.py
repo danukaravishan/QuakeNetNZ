@@ -31,6 +31,25 @@ def normalize(signal):
     """Normalize the signal between -1 and 1."""
     return (signal - np.min(signal)) / (np.max(signal) - np.min(signal)) * 2 - 1
 
+# normalise 2
+def zscore_normalize(signal):
+    return (signal - np.mean(signal)) / np.std(signal)
+
+#normalise 3
+def minmax_01(signal):
+    return (signal - np.min(signal)) / (np.max(signal) - np.min(signal))
+
+# normalise 4
+def robust_scale(signal):
+    median = np.median(signal)
+    iqr = np.percentile(signal, 75) - np.percentile(signal, 25)
+    return (signal - median) / iqr
+
+#normalise 5
+def energy_normalize(signal):
+    energy = np.sqrt(np.sum(signal**2))
+    return signal / energy if energy != 0 else signal
+
 def pre_proc_data(data):
     return np.array([normalize(bandpass_filter(apply_detrend(demean(sig)))) for sig in data])
 
