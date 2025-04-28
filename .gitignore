@@ -55,6 +55,9 @@ MANIFEST
 *.manifest
 *.spec
 
+data/test_data*
+data/train_data*
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
