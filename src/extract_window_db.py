@@ -123,6 +123,131 @@ def downsample(data, original_rate, target_rate):
     downsample_factor = int(target_rate // original_rate)
     return decimate(data, downsample_factor, axis=1, zero_phase=True)
 
+def extract_stead_data(cfg=None):
+
+    if cfg is None:
+        cfg = Config()
+
+    hdf5_file = h5py.File("/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/stead_acc_p_s_data.hdf5", 'r')
+    extracted_file = "data/stead_2s_data.hdf5"
+    if os.path.isfile(extracted_file):
+        os.remove(extracted_file)
+
+    stead_noise_data = np.load("stead_samples_80000.npy")
+
+    with h5py.File(extracted_file, 'a') as hdf:
+        
+        # Create database groups
+        if 'positive_samples_p' not in hdf:
+            positive_group_p = hdf.create_group('positive_samples_p')
+        else:
+            positive_group_p = hdf['positive_samples_p']
+
+        if "positive_samples_s" not in hdf:
+            positive_group_s = hdf.create_group('positive_samples_s')
+        else:
+            positive_group_s = hdf['positive_samples_s']
+
+        if "negative_sample_group" not in hdf:
+            negative_group = hdf.create_group('negative_sample_group')
+        else:
+            negative_group = hdf['negative_sample_group']
+
+        count = 0
+        downsample_factor = 1
+        stead_noise_index = 0
+
+        #split_index = int(0.8 * len(hdf5_file.keys()))
+        
+        for event_id in hdf5_file["data"].keys():  # Access the "data" group and iterate over its keys
+
+            dataset = hdf5_file["data"].get(event_id)
+            data = np.array(dataset)
+
+            p_arrival_index = int(dataset.attrs["p_arrival_sample"])
+            s_arrival_index = int(dataset.attrs["s_arrival_sample"])
+
+            sampling_rate = 100 
+
+
+            # if sampling_rate != cfg.BASE_SAMPLING_RATE:
+            #     data_resampled = downsample(data, cfg.BASE_SAMPLING_RATE, sampling_rate)
+            #     data = data_resampled
+            #     downsample_factor = int(sampling_rate // cfg.BASE_SAMPLING_RATE)
+            #     p_arrival_index = int(p_arrival_index/downsample_factor)
+            #     s_arrival_index = int(s_arrival_index/downsample_factor)
+            #     sampling_rate = cfg.BASE_SAMPLING_RATE
+            
+            count +=1
+            
+            ## Give temporal shift to the data
+            SHIFT_RANGE_SEC = 0.5  # Max shift in seconds (±0.5 sec)
+            
+            shift_samples = int(SHIFT_RANGE_SEC * sampling_rate)
+            random_shifts_p = np.random.randint(-shift_samples, shift_samples + 1)
+            random_shifts_s = np.random.randint(-shift_samples, shift_samples + 1)
+
+            # Modify P and S indices
+            new_p_indices = np.clip(p_arrival_index + random_shifts_p, 0, len(data[0]) - 1)
+            new_s_indices = np.clip(s_arrival_index + random_shifts_s, 0, len(data[0]) - 1)
+
+            # Extract wave data
+            window_size = int(cfg.TRAINING_WINDOW * sampling_rate)
+            p_data  = extract_wave_window(data, new_p_indices, window_size)
+            s_data = extract_wave_window(data, new_s_indices, window_size)
+            noise_data = extract_noise_window(data, window_size, p_arrival_index)
+
+            # if np.random.choice([True, False]):
+            #     noise_data += np.random.normal(NOISE_MEAN, NOISE_STD, noise_data.shape)
+
+            # noise_types = ["gaussian", "uniform", "pink", "brownian"]
+            # selected_noise = np.random.choice(noise_types)
+            # synthetic_noise = generate_noise(selected_noise, noise_data.shape)
+
+            # Upsample the noise sample from 50Hz to 100Hz
+            stead_noise_sample = stead_noise_data[stead_noise_index]
+            upsample_factor = sampling_rate/cfg.BASE_SAMPLING_RATE  # 100Hz / 50Hz
+            stead_noise_sample = scipy.signal.resample(stead_noise_sample, int(stead_noise_sample.shape[1] * upsample_factor), axis=1)
+            stead_noise_index  += 1
+
+            NOISE_MEAN = 0  # Gaussian noise mean
+            NOISE_STD = 0.00001  # Gaussian noise std deviation
+          
+            if np.random.choice([True, False]):
+                stead_noise_sample += np.random.normal(NOISE_MEAN, NOISE_STD, stead_noise_sample.shape)
+
+            if ( (len(p_data[0]) != window_size) or (len(s_data[0]) != window_size) or (len(noise_data[0]) != window_size) or (len(stead_noise_sample[0]) != window_size)):
+                print("Wrong data  ====== : "+event_id)
+                continue
+
+            ## Add data to each groups
+            if event_id not in positive_group_p:
+                positive_p_dataset = positive_group_p.create_dataset(event_id, data=p_data)
+            else:
+                print(f"Dataset {event_id} already exists in positive_samples_p. Skipping.")
+
+            if event_id not in positive_group_s:
+                positive_s_dataset = positive_group_s.create_dataset(event_id, data=s_data)
+            else:
+                print(f"Dataset {event_id} already exists in positive_samples_p. Skipping.")
+
+            if event_id not in negative_group:
+                negative_dataset = negative_group.create_dataset(event_id, data=noise_data)
+                negative_dataset = negative_group.create_dataset(event_id+"_stead", data=stead_noise_sample)
+            else:
+                print(f"Dataset {event_id} already exists in negative_group. Skipping.")
+
+            for key, value in dataset.attrs.items():
+                positive_group_p[event_id].attrs[key] = value
+                #positive_group_s[event_id].attrs[key] = value
+                negative_group[event_id].attrs[key] = value
+                # Change the wave start time, samppling rate and other changed attributes
+
+            print(f" {str(count)} : {event_id}")
+
+    print ("Number of records " + str(count))
+
+
 
 def extract_data(cfg=None):
 
@@ -160,9 +285,9 @@ def extract_data(cfg=None):
 
         #split_index = int(0.8 * len(hdf5_file.keys()))
         
-        for event_id in hdf5_file.keys():
+        for event_id in hdf5_file["data"].keys():  # Access the "data" group and iterate over its keys
 
-            dataset = hdf5_file.get(event_id)
+            dataset = hdf5_file["data"].get(event_id)
             data = np.array(dataset)
 
             p_arrival_index = int(dataset.attrs["p_arrival_sample"])

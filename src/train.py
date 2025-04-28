@@ -96,12 +96,17 @@ def train(cfg):
    p_data_test = np.array(p_data_test)
    s_data_test = np.array(s_data_test)
    noise_data_test = np.array(noise_data_test)
+   test_subset_len = int(0.5 * p_data_test.shape[0])
+   
+   random_state = np.random.RandomState(42)  # Set a fixed random seed for consistency
+   random_indices = random_state.choice(len(p_data_test), test_subset_len, replace=False)
+   p_data_test = p_data_test[random_indices]
 
-   test_subset_len = int(0.2 * p_data_test.shape[0])
+   random_indices = random_state.choice(len(s_data_test), test_subset_len, replace=False)
+   s_data_test = s_data_test[random_indices]
 
-   p_data_test = p_data_test[:test_subset_len]
-   s_data_test = s_data_test[:test_subset_len]
-   noise_data_test = noise_data_test[:test_subset_len*2]
+   random_indices = random_state.choice(len(noise_data_test), test_subset_len * 2, replace=False)
+   noise_data_test = noise_data_test[random_indices]
 
    p_data_test = pre_proc_data(p_data_test)
    s_data_test = pre_proc_data(s_data_test)
@@ -118,8 +123,7 @@ def train(cfg):
    X = np.array(X)
    Y = np.array(Y)
 
-   # Allocate 10% of the train set to validation  set
-   train_size = int(0.9 * len(X))
+   train_size = int(1 * len(X))
 
    X_train = X[:train_size]
    Y_train = Y[:train_size]
@@ -132,8 +136,6 @@ def train(cfg):
 
    X_val = np.concatenate([X_val, X_test_val])
    Y_val = np.concatenate([Y_val, Y_test_val])
-   #X_val = X_test_val
-   #Y_val = Y_test_val
 
    train_loader = DataLoader(
     TensorDataset(torch.tensor(X_train, dtype=torch.float32),
