@@ -9,7 +9,21 @@ cfg = Config()
 nncfg = NNCFG()
 
 checkpoint = torch.load(cfg.MODEL_FILE_NAME, map_location=torch.device('cpu'))
-model = PWaveCNN(model_id=nncfg.model_id, window_size=cfg.SAMPLE_WINDOW_SIZE, conv1_filters=16, conv2_filters=4, fc1_neurons=30, kernel_size1=nncfg.kernal_size1, kernel_size2=nncfg.kernal_size2)
+#model = PWaveCNN(model_id=nncfg.model_id, window_size=cfg.SAMPLE_WINDOW_SIZE, conv1_filters=16, conv2_filters=4, fc1_neurons=30, kernel_size1=nncfg.kernal_size1, kernel_size2=nncfg.kernal_size2)
+model = PWaveCNN( 
+    window_size=cfg.SAMPLE_WINDOW_SIZE, 
+    conv1_filters=32, 
+    conv2_filters=32, 
+    conv3_filters=32, 
+    fc1_neurons=44, 
+    fc2_neurons=18, 
+    kernel_size1=4, 
+    kernel_size2=4, 
+    kernel_size3=4, 
+    dropout1=0.3, 
+    dropout2=0.2, 
+    dropout3=0.1
+)
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 

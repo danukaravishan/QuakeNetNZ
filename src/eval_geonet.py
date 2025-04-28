@@ -6,6 +6,7 @@ from obspy.signal.filter import bandpass
 from dataprep import pre_proc_data
 from config import Config
 from database_op import *
+from scipy.signal import resample
 
 def plot_comparison(segment, test_sample, type1, type2):
     plt.figure(figsize=(12, 4))
@@ -51,7 +52,7 @@ nncfg = NNCFG()
 
 # Open HDF5 file and iterate through all waveforms
 with h5py.File(hdf5_file, 'r') as hdf:
-    for event_id in hdf.keys():  # Iterate over event IDs
+    for event_id in reversed(list(hdf.keys())):  # Iterate over event IDs
         dataset = hdf.get(event_id)
         if dataset is None:
             continue
@@ -63,6 +64,12 @@ with h5py.File(hdf5_file, 'r') as hdf:
             print(f"Skipping {event_id}: Expected 3 channels, found {data.shape[0]}")
             continue
         
+        if dataset.attrs["sampling_rate"]  != sampling_rate:
+            # Resample the data to the target sampling rate
+            original_rate = dataset.attrs["sampling_rate"]
+            num_samples = int(data.shape[1] * sampling_rate / original_rate)
+            data = np.array([resample(channel, num_samples) for channel in data])
+    
         # Get total samples and time duration
         total_samples = data.shape[1]
         total_seconds = total_samples / sampling_rate
@@ -81,7 +88,7 @@ with h5py.File(hdf5_file, 'r') as hdf:
             input_tensor = torch.tensor(segment, dtype=torch.float32).unsqueeze(0)  # (1, 3, 100)
             output = model(input_tensor)
 
-            cl_out = output > nncfg.detection_threshold
+            cl_out = output > 0.99
 
             #predicted_class = torch.argmax(output, dim=1).item()
 

@@ -97,3 +97,63 @@ def split_data():
                     
                     count +=1
                     print(event_id)
+
+
+def split_data_randomly():
+    cfg = Config()
+
+    if not os.path.isfile(cfg.DATABASE_FILE):
+        return Exception("Database file is not available")
+    
+    # Train dataset
+    train_dataset_file = cfg.TRAIN_DATA
+    # Test dataset
+    test_dataset_file = cfg.TEST_DATA
+
+    # Remove existing train and test files if they exist
+    for file in [train_dataset_file, test_dataset_file]:
+        if os.path.isfile(file):
+            os.remove(file)
+
+    with h5py.File(cfg.DATABASE_FILE, 'r') as hdf_file:
+        
+        # Create new HDF5 files for train and test
+        with h5py.File(train_dataset_file, 'w') as train_file, h5py.File(test_dataset_file, 'w') as test_file:
+            
+            # Loop through each group in the original HDF5 file (p_wave, s_wave, noise)
+            for group_name in hdf_file.keys():
+
+                if group_name not in train_file:
+                    train_group = train_file.create_group(group_name)
+                else:
+                    train_group = train_file[group_name]
+                    
+                if group_name not in test_file:
+                    test_group = test_file.create_group(group_name)
+                else:
+                    test_group = test_file[group_name]
+
+                group = hdf_file[group_name]  # Load the entire dataset for this group
+                
+                event_ids = list(group.keys())
+                np.random.shuffle(event_ids)  # Shuffle the event IDs randomly
+
+                split_index = int(0.8 * len(event_ids))  # 80% for training, 20% for testing
+                train_ids = event_ids[:split_index]
+                test_ids = event_ids[split_index:]
+
+                for event_id in train_ids:
+                    data = group.get(event_id)
+                    if event_id not in train_group:
+                        new_dataset = train_group.create_dataset(event_id, data=data)
+                        for attr_name, attr_value in data.attrs.items():
+                            new_dataset.attrs[attr_name] = attr_value
+
+                for event_id in test_ids:
+                    data = group.get(event_id)
+                    if event_id not in test_group:
+                        new_dataset = test_group.create_dataset(event_id, data=data)
+                        for attr_name, attr_value in data.attrs.items():
+                            new_dataset.attrs[attr_name] = attr_value
+
+                print(f"Group {group_name} split into {len(train_ids)} train and {len(test_ids)} test samples.")

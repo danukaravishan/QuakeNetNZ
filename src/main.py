@@ -2,8 +2,8 @@ from utils import *
 from config import Config, MODE_TYPE
 from train import train, hyper_param_opt
 from test import test
-from extract_window_db import extract_data
-from database_op import split_data
+from extract_window_db import extract_data, extract_stead_data
+from database_op import split_data, split_data_randomly
 
 def main():
    cfg = Config()
@@ -12,10 +12,12 @@ def main():
       print()
 
    elif cfg.MODE == MODE_TYPE.EXTRACT_DATA:
-      extract_data()
+      #extract_data()
+      extract_stead_data()
 
    elif cfg.MODE == MODE_TYPE.SPLIT_DATA:
-      split_data()
+      #split_data()
+      split_data_randomly()
 
    elif cfg.MODE == MODE_TYPE.TRAIN:
       train(cfg)
