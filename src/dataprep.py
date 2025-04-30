@@ -10,7 +10,7 @@ def apply_detrend(signal):
     """Remove linear trends from the signal."""
     return detrend(signal)
 
-def bandpass_filter(signal, lowcut=0.1, highcut=20.0, fs=50, order=4):
+def bandpass_filter(signal, lowcut=1, highcut=20.0, fs=50, order=4):
     """
     Apply a Butterworth bandpass filter.
     
@@ -26,6 +26,26 @@ def bandpass_filter(signal, lowcut=0.1, highcut=20.0, fs=50, order=4):
     high = highcut / nyquist
     b, a = butter(order, [low, high], btype='band')
     return filtfilt(b, a, signal)
+
+def taper_signal(signal, taper_fraction=0.05):
+    """Apply a Hann taper to both ends of the signal."""
+    npts = len(signal)
+    taper_len = int(taper_fraction * npts)
+    if taper_len == 0:
+        return signal  # Skip if signal too short
+    taper = np.ones(npts)
+    window = np.hanning(2 * taper_len)
+    taper[:taper_len] = window[:taper_len]
+    taper[-taper_len:] = window[-taper_len:]
+    return signal * taper
+
+def highpass_filter(signal, cutoff=0.5, fs=100.0, order=4):
+    """Apply a Butterworth high-pass filter."""
+    nyquist = 0.5 * fs
+    normal_cutoff = cutoff / nyquist
+    b, a = butter(order, normal_cutoff, btype='high', analog=False)
+    return filtfilt(b, a, signal)
+
 
 def normalize(signal):
     """Normalize the signal between -1 and 1."""
@@ -50,8 +70,18 @@ def energy_normalize(signal):
     energy = np.sqrt(np.sum(signal**2))
     return signal / energy if energy != 0 else signal
 
-def pre_proc_data(data):
-    return np.array([normalize(bandpass_filter(apply_detrend(demean(sig)))) for sig in data])
+
+
+
+def pre_proc_data(data, sampling_rate=50):
+    processed_data = []
+    for sig in data:
+        demeaned = demean(sig)
+        detrended = apply_detrend(demeaned)
+        filtered = bandpass_filter(detrended, fs=sampling_rate)
+        #normalized = normalize(filtered)
+        processed_data.append(filtered)
+    return np.array(processed_data)
 
 
 def numpy_to_stream(data):
