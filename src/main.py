@@ -12,8 +12,8 @@ def main():
       print()
 
    elif cfg.MODE == MODE_TYPE.EXTRACT_DATA:
-      #extract_data()
-      extract_stead_data()
+      extract_data()
+      #extract_stead_data()
 
    elif cfg.MODE == MODE_TYPE.SPLIT_DATA:
       #split_data()

@@ -4,6 +4,7 @@
 from utils import *
 from config import *
 import scipy.signal
+from dataprep import pre_proc_data
 
 def generate_noise(noise_type, shape, sampling_rate=50):
     if noise_type == "gaussian":
@@ -169,15 +170,6 @@ def extract_stead_data(cfg=None):
 
             sampling_rate = 100 
 
-
-            # if sampling_rate != cfg.BASE_SAMPLING_RATE:
-            #     data_resampled = downsample(data, cfg.BASE_SAMPLING_RATE, sampling_rate)
-            #     data = data_resampled
-            #     downsample_factor = int(sampling_rate // cfg.BASE_SAMPLING_RATE)
-            #     p_arrival_index = int(p_arrival_index/downsample_factor)
-            #     s_arrival_index = int(s_arrival_index/downsample_factor)
-            #     sampling_rate = cfg.BASE_SAMPLING_RATE
-            
             count +=1
             
             ## Give temporal shift to the data
@@ -197,14 +189,6 @@ def extract_stead_data(cfg=None):
             s_data = extract_wave_window(data, new_s_indices, window_size)
             noise_data = extract_noise_window(data, window_size, p_arrival_index)
 
-            # if np.random.choice([True, False]):
-            #     noise_data += np.random.normal(NOISE_MEAN, NOISE_STD, noise_data.shape)
-
-            # noise_types = ["gaussian", "uniform", "pink", "brownian"]
-            # selected_noise = np.random.choice(noise_types)
-            # synthetic_noise = generate_noise(selected_noise, noise_data.shape)
-
-            # Upsample the noise sample from 50Hz to 100Hz
             stead_noise_sample = stead_noise_data[stead_noise_index]
             upsample_factor = sampling_rate/cfg.BASE_SAMPLING_RATE  # 100Hz / 50Hz
             stead_noise_sample = scipy.signal.resample(stead_noise_sample, int(stead_noise_sample.shape[1] * upsample_factor), axis=1)
@@ -251,6 +235,7 @@ def extract_stead_data(cfg=None):
 
 def extract_data(cfg=None):
 
+    print("Extracting data from the 90  geonet database")
     if cfg is None:
         cfg = Config()
 
@@ -285,9 +270,9 @@ def extract_data(cfg=None):
 
         #split_index = int(0.8 * len(hdf5_file.keys()))
         
-        for event_id in hdf5_file["data"].keys():  # Access the "data" group and iterate over its keys
+        for event_id in hdf5_file.keys():  # Directly iterate over the keys in the HDF5 file
 
-            dataset = hdf5_file["data"].get(event_id)
+            dataset = hdf5_file.get(event_id)
             data = np.array(dataset)
 
             p_arrival_index = int(dataset.attrs["p_arrival_sample"])
@@ -310,15 +295,17 @@ def extract_data(cfg=None):
             if dataset.attrs["epicentral_distance"] > 150:
                 continue
 
+            data_pre_proc = pre_proc_data(data, sampling_rate=sampling_rate)
+
             if sampling_rate != cfg.BASE_SAMPLING_RATE:
-                data_resampled = downsample(data, cfg.BASE_SAMPLING_RATE, sampling_rate)
+                data_resampled = downsample(data_pre_proc, cfg.BASE_SAMPLING_RATE, sampling_rate)
                 data = data_resampled
                 downsample_factor = int(sampling_rate // cfg.BASE_SAMPLING_RATE)
                 p_arrival_index = int(p_arrival_index/downsample_factor)
                 s_arrival_index = int(s_arrival_index/downsample_factor)
                 sampling_rate = cfg.BASE_SAMPLING_RATE
             
-            count +=1
+            count += 1
             
             ## Give temporal shift to the data
             SHIFT_RANGE_SEC = 0.5  # Max shift in seconds (±0.5 sec)
@@ -333,9 +320,9 @@ def extract_data(cfg=None):
 
             # Extract wave data
             window_size = int(cfg.TRAINING_WINDOW * sampling_rate)
-            p_data  = extract_wave_window(data, new_p_indices, window_size)
-            s_data = extract_wave_window(data, new_s_indices, window_size)
-            noise_data = extract_noise_window(data, window_size, p_arrival_index)
+            p_data  = extract_wave_window(data_pre_proc, new_p_indices, window_size)
+            s_data = extract_wave_window(data_pre_proc, new_s_indices, window_size)
+            noise_data = extract_noise_window(data_pre_proc, window_size, p_arrival_index)
 
             # if np.random.choice([True, False]):
             #     noise_data += np.random.normal(NOISE_MEAN, NOISE_STD, noise_data.shape)
@@ -344,7 +331,16 @@ def extract_data(cfg=None):
             # selected_noise = np.random.choice(noise_types)
             # synthetic_noise = generate_noise(selected_noise, noise_data.shape)
 
-            stead_noise_sample = stead_noise_data[stead_noise_index]
+            # Add another noise sample from unfiltered data randomly between the begining and the p pick time
+            start_index = 0
+            end_index = max(1, p_arrival_index - window_size)  # Ensure at least one sample is available
+            random_index = np.random.randint(start_index, end_index)
+            stead_noise_sample = data[:, random_index:random_index + window_size]
+            
+            # Ensure the extracted noise sample has the correct shape
+            if stead_noise_sample.shape[1] < window_size:
+                padding = np.random.normal(0, 0.00001, (data.shape[0], window_size - stead_noise_sample.shape[1]))
+                stead_noise_sample = np.concatenate((stead_noise_sample, padding), axis=1)
             stead_noise_index  += 1
 
             NOISE_MEAN = 0  # Gaussian noise mean
