@@ -229,8 +229,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
         for row in reader:
             event_ids.append(row[0])  # Assuming the first column contains event IDs
 
-    hdf5_file_path = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
-    generate_output_for_events(event_ids, hdf5_file_path, temp_dir, model)
+    generate_output_for_events(event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model)
 
     # Append waveform graphs to the PDF
     for image_file in sorted(os.listdir(temp_dir)):
@@ -249,20 +248,3 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
 
     # Append model details to CSV
     addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters)
-
-
-def find_latest_file(directory, prefix, extension):
-    files = [f for f in os.listdir(directory) if f.startswith(prefix) and f.endswith(extension)]
-    if not files:
-        raise ValueError(f"No files with prefix '{prefix}' and extension '{extension}' found in {directory}")
-    latest_file = max(files, key=lambda x: os.path.getctime(os.path.join(directory, x)))
-    return latest_file
-
-
-def getLatestModelName(cfg):
-    # Fine the latest file name
-    directory = cfg.MODEL_PATH  # Change to your model directory
-    model_prefix = (cfg.MODEL_TYPE.name).lower()
-    model_extension = ".pt"
-    latest_model_file = find_latest_file(directory, model_prefix, model_extension)
-    return latest_model_file

@@ -28,7 +28,9 @@ class Config:
         self.MODE               = MODE_TYPE.ALL
         self.MODEL_TYPE         = MODEL_TYPE.CNN
         # File paths
-        self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
+        #self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
+        self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
+        
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
         self.MODEL_FILE_NAME    = "models/cnn_20250401_0216_9867.pt_ts.pt" # default model name : model_default.pt. If this is changed, new name will considered as the model_name for testing
@@ -42,7 +44,6 @@ class Config:
         self.SHIFT_WINDOW           = 10
         self.DATA_EXTRACTED_FILE    = f"data/waveform_2s_data.hdf5"
         
-
         self.TEST_DATA              = "data/test_data"
         self.TRAIN_DATA             = "data/train_data"
 
