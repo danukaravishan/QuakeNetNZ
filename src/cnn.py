@@ -50,9 +50,15 @@ class MobileNet1D(nn.Module):
         x = self.fc(x)  # Shape: (batch_size, num_classes)
         return x
 
-
+## CNN Small model
 # class PWaveCNN(nn.Module):
-#     def __init__(self, window_size, conv1_filters=48, conv2_filters=48, dropout1=0.1 , dropout2=0.2, dropout3=0.2, fc1_neurons=24, kernel_size1=4, kernel_size2=4, model_id=""):
+#     def __init__(self, window_size, 
+#                  conv1_filters=48, conv2_filters=48, conv3_filters=16,
+#                  dropout1=0.3 , dropout2=0.3, dropout3=0.2,
+#                  fc1_neurons=24, fc2_neurons=12,
+#                  kernel_size1=4, kernel_size2=4, kernel_size3=4,
+#                  model_id=""):
+        
 #         super(PWaveCNN, self).__init__()
         
 #         # Convolutional layers
@@ -60,20 +66,20 @@ class MobileNet1D(nn.Module):
 #         self.conv2 = nn.Conv1d(conv1_filters, conv2_filters, kernel_size2)
         
 #         # Pooling layers
-#         #self.maxpool = nn.MaxPool1d(2)  # Max pooling with kernel size 2
+#         self.maxpool = nn.MaxPool1d(2)  # Max pooling with kernel size 2
 #         #self.maxpool2 = nn.MaxPool1d(2)  # Max pooling with kernel size 2
-#         #self.minpool = lambda x: -F.max_pool1d(-x, 2)  # Min pooling using negation trick
+#         self.minpool = lambda x: -F.max_pool1d(-x, 2)  # Min pooling using negation trick
 
 #         # Compute output size after convolutions and pooling
-#         conv1_out_size = (window_size - kernel_size1 + 1)   # After max pool
-#         conv2_out_size = (conv1_out_size - kernel_size2 + 1)  # After min pool
+#         conv1_out_size = (window_size - kernel_size1 + 1)//2   # After max pool
+#         conv2_out_size = (conv1_out_size - kernel_size2 + 1)//2  # After min pool
 
-#         self.dropout2 = nn.Dropout(p=dropout2)
-#         self.norm1 = nn.LayerNorm([conv1_filters, conv1_out_size])
-#         self.norm2 = nn.GroupNorm(num_groups=2, num_channels=conv2_filters)
+#         #self.dropout2 = nn.Dropout(p=dropout2)
+#         #self.norm1 = nn.LayerNorm([conv1_filters, conv1_out_size])
+#         #self.norm2 = nn.GroupNorm(num_groups=2, num_channels=conv2_filters)
 #         # Fully connected layers
 
-#         self.dropout3 = nn.Dropout(p=dropout3)
+#         #self.dropout3 = nn.Dropout(p=dropout3)
 #         self.fc1 = nn.Linear(conv2_filters * conv2_out_size, fc1_neurons)
 #         self.fc2 = nn.Linear(fc1_neurons, 1)  # Binary classification output
         
@@ -82,23 +88,21 @@ class MobileNet1D(nn.Module):
 #         self.model_id = "cnn_" + datetime.now().strftime("%Y%m%d_%H%M") + "_" + random_tag if model_id == "" else model_id
 
 #     def forward(self, x):
-#         x = self.norm1(F.relu(self.conv1(x)))
+#         x = F.relu(self.conv1(x))
 #         #x = F.relu(self.conv1(x))
-#         #x = self.maxpool(x)  # Apply max pooling
+#         x = self.maxpool(x)  # Apply max pooling
 
 #         x = F.relu(self.conv2(x))
-#         x = self.norm2(x)   
-#         x = self.dropout2(x) 
 
-#         #x = self.minpool(x)  # Apply min pooling
+#         x = self.minpool(x)  # Apply min pooling
 
 #         x = x.view(x.size(0), -1)
 #         x = F.relu(self.fc1(x))
-#         x = self.dropout2(x) 
 #         x = F.sigmoid(self.fc2(x))
 #         return x
 
 
+# CNN Larger model
 class PWaveCNN(nn.Module):
     def __init__(self, window_size, 
                  conv1_filters=48, conv2_filters=48, conv3_filters=16,
