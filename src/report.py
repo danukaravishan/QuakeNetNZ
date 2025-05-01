@@ -5,7 +5,7 @@ from fpdf import FPDF
 import os
 import csv
 from utils import *
-from dataprep import pre_proc_data
+from dataprep import pre_proc_data, normalize_data
 import h5py
 import numpy as np
 import torch
@@ -33,7 +33,7 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
     os.makedirs(output_dir, exist_ok=True)  # Ensure the output directory exists
 
     with h5py.File(hdf5_file_path, 'r') as hdf:
-        for event_id in event_ids:
+        for idx, event_id in enumerate(event_ids, 1):  # Add counter using enumerate
             dataset = hdf.get(event_id)
             if dataset is None:
                 print(f"Dataset {event_id} not found.")
@@ -44,11 +44,31 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
                 print(f"Skipping {event_id}: Expected 3 channels, found {data.shape[0]}")
                 continue
 
+            
+            event_magnitude = dataset.attrs.get("magnitude", "N/A")
+            epicentral_distance = dataset.attrs.get("epicentral_distance", "N/A")
+
+            # Adjust P-wave and S-wave indices for sampling rate
+            p_arrival_index = int(dataset.attrs["p_arrival_sample"])
+            s_arrival_index = int(dataset.attrs["s_arrival_sample"])
+            original_rate = dataset.attrs["sampling_rate"]
+
             # Resample if necessary
+
+            #data = pre_proc_data(data, dataset.attrs["sampling_rate"])
+
             if dataset.attrs["sampling_rate"] != sampling_rate:
                 original_rate = dataset.attrs["sampling_rate"]
                 num_samples = int(data.shape[1] * sampling_rate / original_rate)
                 data = np.array([resample(channel, num_samples) for channel in data])
+                downsample_factor = original_rate / sampling_rate
+                p_arrival_index = int(p_arrival_index / downsample_factor)
+                s_arrival_index = int(s_arrival_index / downsample_factor)
+
+
+            # Convert indices to time
+            p_wave_time = p_arrival_index / sampling_rate
+            s_wave_time = s_arrival_index / sampling_rate
 
             # Get total samples and time duration
             total_samples = data.shape[1]
@@ -62,11 +82,11 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
 
             for start in range(0, total_samples - window_size + 1, stride):
                 segment = data[:, start:start + window_size]  # (3, window_size)
-                segment = pre_proc_data(segment)
+                segment = normalize_data(segment)
                 input_tensor = torch.tensor(segment, dtype=torch.float32).unsqueeze(0)  # (1, 3, window_size)
                 output = model(input_tensor)
 
-                cl_out = output > 0.99
+                cl_out = output > 0.9
                 classified_output.append(cl_out.item())
                 raw_output.append(output.item())
                 time_preds.append(start / sampling_rate)
@@ -83,8 +103,13 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
             # Plot raw waveform
             for i in range(3):
                 axes[0].plot(timestamps, data[i], color=colors[i], label=labels[i])
-            axes[0].set_title(f"Waveform - Event {event_id}")
+            axes[0].set_title(f"Waveform ({idx}/{len(event_ids)}) - Event {event_id} | Magnitude: {event_magnitude} | Distance: {epicentral_distance} km")
             axes[0].set_ylabel("Amplitude")
+            axes[0].legend()
+
+            # Add vertical lines for P-wave and S-wave pick times
+            axes[0].axvline(x=p_wave_time, color='orange', linestyle='--', label='P-wave Pick')
+            axes[0].axvline(x=s_wave_time, color='purple', linestyle='--', label='S-wave Pick')
             axes[0].legend()
 
             # Plot classified output

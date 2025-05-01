@@ -1,7 +1,7 @@
 from utils import *
 from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE
-from dataprep import pre_proc_data
+from dataprep import pre_proc_data, normalize_data
 
 def loadModelConfig(nncfg, checkpoint):
 
@@ -71,9 +71,9 @@ def test(cfg):
    s_data      = np.array(s_data)
    noise_data  = np.array(noise_data)
 
-   p_data = pre_proc_data(p_data)
-   s_data = pre_proc_data(s_data)
-   noise_data = pre_proc_data(noise_data)
+   p_data = normalize_data(p_data)
+   s_data = normalize_data(s_data)
+   noise_data = normalize_data(noise_data)
 
    # test_subset_len = int(0.2 * p_data.shape[0])
 

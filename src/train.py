@@ -4,7 +4,7 @@ from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE, NNCFG
 import optuna
 from torch.utils.data import random_split, DataLoader, TensorDataset
-from dataprep import pre_proc_data,normalize
+from dataprep import pre_proc_data,normalize, normalize_data
 import optuna
 import torch
 import torch.nn as nn
@@ -86,9 +86,9 @@ def train(cfg):
    s_data = np.array(s_data)
    noise_data = np.array(noise_data)
 
-   p_data = normalize(p_data)
-   s_data = normalize(s_data)
-   noise_data = normalize(noise_data)
+   p_data = normalize_data(p_data)
+   s_data = normalize_data(s_data)
+   noise_data = normalize_data(noise_data)
 
    ## Merge First 20% of test data into validation set
    hdf5_file_test = h5py.File(cfg.TEST_DATA, 'r')
@@ -109,9 +109,9 @@ def train(cfg):
    random_indices = random_state.choice(len(noise_data_test), test_subset_len * 2, replace=False)
    noise_data_test = noise_data_test[random_indices]
 
-   p_data_test = normalize(p_data_test)
-   s_data_test = normalize(s_data_test)
-   noise_data_test = normalize(noise_data_test)
+   p_data_test = normalize_data(p_data_test)
+   s_data_test = normalize_data(s_data_test)
+   noise_data_test = normalize_data(noise_data_test)
    
    ### 
    positive_data = np.concatenate((p_data , s_data))

@@ -71,7 +71,24 @@ def energy_normalize(signal):
     return signal / energy if energy != 0 else signal
 
 
+def normalize_data(data):
+    if data.ndim == 3:  # Case for a set of data
+        processed_data = []
+        for sig in data:
+            normalised = np.array([normalize(sig[i, :]) for i in range(sig.shape[0])])  # Normalize each component
+            processed_data.append(normalised)
+        return np.array(processed_data)
+    elif data.ndim == 2:  # Case for a single input
+        return np.array([normalize(data[i, :]) for i in range(data.shape[0])])  # Normalize each component
+    else:
+        raise ValueError("Input data must have 2 or 3 dimensions.")
 
+# def normalize_data(data):
+#     processed_data = []
+#     for sig in data:
+#         normalised = np.array([normalize(sig[i, :]) for i in range(sig.shape[0])])  # Normalize each component
+#         processed_data.append(normalised)
+#     return np.array(processed_data)
 
 def pre_proc_data(data, sampling_rate=50):
     processed_data = []
