@@ -5,7 +5,7 @@ from fpdf import FPDF
 import os
 import csv
 from utils import *
-from dataprep import pre_proc_data, normalize_data
+from dataprep import pre_proc_data, normalize_data, pre_process_real_time_2s
 import h5py
 import numpy as np
 import torch
@@ -14,18 +14,6 @@ from obspy import UTCDateTime
 from obspy import Stream
 from obspy import Trace
 import shutil  # For deleting the temporary directory
-
-
-# def plot_loss(train_losses, val_loss, val_acc, file_name):
-#     plt.plot(train_losses, label='Training Loss')
-#     plt.xlabel('Epoch')
-#     plt.ylabel('Loss')
-#     plt.title('Loss Curve')
-#     plt.legend()
-    
-#     image_filename = f"{file_name}.jpg"
-#     plt.savefig(image_filename)  # Save as PNG, you can change to other formats like .pdf, .jpeg
-#     print(f"Loss curve saved as {image_filename}")
 
 
 def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sampling_rate=50, window_size=100, stride=10):
@@ -44,7 +32,6 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
                 print(f"Skipping {event_id}: Expected 3 channels, found {data.shape[0]}")
                 continue
 
-            
             event_magnitude = dataset.attrs.get("magnitude", "N/A")
             epicentral_distance = dataset.attrs.get("epicentral_distance", "N/A")
 
@@ -54,17 +41,16 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
             original_rate = dataset.attrs["sampling_rate"]
 
             # Resample if necessary
-
-            #data = pre_proc_data(data, dataset.attrs["sampling_rate"])
+            data_pp = pre_proc_data(data, dataset.attrs["sampling_rate"])
 
             if dataset.attrs["sampling_rate"] != sampling_rate:
                 original_rate = dataset.attrs["sampling_rate"]
                 num_samples = int(data.shape[1] * sampling_rate / original_rate)
                 data = np.array([resample(channel, num_samples) for channel in data])
+                data_pp = np.array([resample(channel, num_samples) for channel in data_pp])
                 downsample_factor = original_rate / sampling_rate
                 p_arrival_index = int(p_arrival_index / downsample_factor)
                 s_arrival_index = int(s_arrival_index / downsample_factor)
-
 
             # Convert indices to time
             p_wave_time = p_arrival_index / sampling_rate
@@ -82,6 +68,7 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
 
             for start in range(0, total_samples - window_size + 1, stride):
                 segment = data[:, start:start + window_size]  # (3, window_size)
+                #segment = pre_process_real_time_2s(segment)
                 segment = normalize_data(segment)
                 input_tensor = torch.tensor(segment, dtype=torch.float32).unsqueeze(0)  # (1, 3, window_size)
                 output = model(input_tensor)
@@ -95,7 +82,7 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
             classified_output = np.array(classified_output)
 
             # Plot the waveform
-            fig, axes = plt.subplots(3, 1, figsize=(16, 12), sharex=True)  # Stretched figure size for clarity
+            fig, axes = plt.subplots(4, 1, figsize=(16, 16), sharex=True)  # Adjusted for 4 subplots
 
             colors = ["b", "g", "r"]
             labels = ["Z Component", "N Component", "E Component"]
@@ -112,23 +99,31 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
             axes[0].axvline(x=s_wave_time, color='purple', linestyle='--', label='S-wave Pick')
             axes[0].legend()
 
-            # Plot classified output
-            axes[1].vlines(time_preds, ymin=0, ymax=classified_output, color="k", linewidth=1)
-            axes[1].plot(time_preds, classified_output, 'o', color="k", markersize=3, label="Model Predictions - Noise")
-            axes[1].set_title("Classified Output")
-            axes[1].set_xlabel("Time (seconds)")
-            axes[1].set_ylabel("Prediction (scaled)")
+            # Plot pre-processed waveform
+            for i in range(3):
+                axes[1].plot(timestamps, data_pp[i], color=colors[i], label=labels[i])
+            axes[1].set_title("Pre-processed Waveform")
+            axes[1].set_ylabel("Amplitude")
             axes[1].legend()
 
             # Plot raw model output
             axes[2].vlines(time_preds, ymin=0, ymax=raw_output, color="k", linewidth=1)
             axes[2].plot(time_preds, raw_output, 'o', color="r", markersize=3, label="Model Predictions - Earthquake")
+            axes[2].axhline(y=0.9, color='blue', linestyle='--', label="Cutoff Threshold (0.9)")
             axes[2].set_title("Raw Model Output")
             axes[2].set_xlabel("Time (seconds)")
             axes[2].legend()
 
+            # Plot classified output
+            axes[3].vlines(time_preds, ymin=0, ymax=classified_output, color="k", linewidth=1)
+            axes[3].plot(time_preds, classified_output, 'o', color="k", markersize=3, label="Model Predictions - Noise")
+            axes[3].set_title("Classified Output")
+            axes[3].set_xlabel("Time (seconds)")
+            axes[3].set_ylabel("Prediction (scaled)")
+            axes[3].legend()
+
             plt.tight_layout()
-            output_file = os.path.join(output_dir, f"{event_id}.png")
+            output_file = os.path.join(output_dir, f"{idx}_{event_id}.png")
             plt.savefig(output_file)
             plt.close()
             print(f"Saved output for event {event_id} to {output_file}")
@@ -221,7 +216,8 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
     
     if os.path.exists(loss_curve_image):
         pdf.image(loss_curve_image, x=10, y=30, w=180)  # Adjust the position (x, y) and size (w)
-        pdf.ln(300)  
+        pdf.ln(300)
+        os.remove(loss_curve_image)  # Remove the image file after adding to the PDF
     else:
         print(f"Loss curve not found for {model.model_id}")
 
@@ -240,6 +236,9 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
     pdf.cell(200, 10, txt=param_txt1, ln=True, align='L')
 
     param_txt2 = f"L2_decay={nncfg.l2_decay}, droput1={nncfg.dropout1}, droput2={nncfg.dropout2}"
+    pdf.cell(200, 10, txt=param_txt2, ln=True, align='L')
+
+    param_txt2 = nncfg.model_note
     pdf.cell(200, 10, txt=param_txt2, ln=True, align='L')
 
     # Create a temporary directory for waveform graphs

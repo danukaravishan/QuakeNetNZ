@@ -113,6 +113,8 @@ class NNCFG:
         self.l2_decay              = 1e-3 
         self.val_acc               = None
 
+        self.model_note            = "Empty"
+
 
     def argParser(self):
         parser = argparse.ArgumentParser()
@@ -142,6 +144,8 @@ class NNCFG:
         parser.add_argument('--dropout3', type=float, help='dropout layer 3')
 
         parser.add_argument('--l2_decay', type=float, help='L2 weight decay')
+        
+        parser.add_argument('--model_note', type=str, help='Note for  the model identification')
 
 
         args = parser.parse_args()
@@ -171,5 +175,7 @@ class NNCFG:
         self.dropout3       = float(args.dropout3) if args.dropout3 is not None else self.dropout3
 
         self.l2_decay       = float(args.l2_decay) if args.l2_decay is not None else self.l2_decay
+
+        self.model_note       = str(args.model_note) if args.model_note is not None else self.model_note
 
         print(f"Training Hyperparameter : Learning Rate = {self.learning_rate}, Epoch count = {self.epoch_count}, Batch Size = {self.batch_size}, conv1 = {self.conv1_size}, conv2 = {self.conv2_size}, conv3 = {self.conv3_size}, fc1 {self.fc1_size}, fc2 {self.fc2_size} , CNN filter1 = {self.kernal_size1}, CNN filter2= {self.kernal_size2}, CNN filter3= {self.kernal_size3}") # Add others upon on the requirement

@@ -83,12 +83,13 @@ def normalize_data(data):
     else:
         raise ValueError("Input data must have 2 or 3 dimensions.")
 
-# def normalize_data(data):
-#     processed_data = []
-#     for sig in data:
-#         normalised = np.array([normalize(sig[i, :]) for i in range(sig.shape[0])])  # Normalize each component
-#         processed_data.append(normalised)
-#     return np.array(processed_data)
+def pre_process_real_time_2s(signal, sampling_rate=50):
+    processed_data = []
+    for sig in signal:
+        filtered = bandpass_filter(sig, fs=sampling_rate)
+        processed_data.append(filtered)
+    return np.array(processed_data)
+
 
 def pre_proc_data(data, sampling_rate=50):
     processed_data = []
