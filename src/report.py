@@ -61,14 +61,21 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
             total_seconds = total_samples / sampling_rate
             timestamps = np.arange(0, total_seconds, 1 / sampling_rate)
 
-            # Apply sliding window inference
+            # Simulate real-time inference
+            real_time_window = int(2 * sampling_rate)  # Last 2 seconds of data
             time_preds = []
             raw_output = []
             classified_output = []
 
-            for start in range(0, total_samples - window_size + 1, stride):
-                segment = data[:, start:start + window_size]  # (3, window_size)
-                #segment = pre_process_real_time_2s(segment)
+            for current_time in range(0, total_samples, stride):
+                # Extract the last 2 seconds of data (or less if at the start)
+                start = max(0, current_time - real_time_window)
+                segment = data[:, start:current_time]  # (3, variable_window_size)
+
+                if segment.shape[1] < window_size:
+                    # Skip if the segment is smaller than the required window size
+                    continue
+
                 segment = normalize_data(segment)
                 input_tensor = torch.tensor(segment, dtype=torch.float32).unsqueeze(0)  # (1, 3, window_size)
                 output = model(input_tensor)
@@ -76,7 +83,7 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
                 cl_out = output > 0.9
                 classified_output.append(cl_out.item())
                 raw_output.append(output.item())
-                time_preds.append(start / sampling_rate)
+                time_preds.append(current_time / sampling_rate)
 
             # Convert to NumPy array
             classified_output = np.array(classified_output)
@@ -123,7 +130,7 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
             axes[3].legend()
 
             plt.tight_layout()
-            output_file = os.path.join(output_dir, f"{idx}_{event_id}.png")
+            output_file = os.path.join(output_dir, f"{event_id}.png")
             plt.savefig(output_file)
             plt.close()
             print(f"Saved output for event {event_id} to {output_file}")
@@ -255,11 +262,13 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
 
     generate_output_for_events(event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model)
 
-    # Append waveform graphs to the PDF
-    for image_file in sorted(os.listdir(temp_dir)):
-        if image_file.endswith(".png"):
+    # Append waveform graphs to the PDF in the correct order
+    for event_id in event_ids:
+        image_file = f"{event_id}.png"
+        image_path = os.path.join(temp_dir, image_file)
+        if os.path.exists(image_path):
             pdf.add_page()
-            pdf.image(os.path.join(temp_dir, image_file), x=10, y=10, w=180)
+            pdf.image(image_path, x=10, y=10, w=180)
 
     # Save the PDF
     pdf_filename = cfg.MODEL_PATH + model.model_id + ".pdf"
