@@ -97,16 +97,17 @@ def train(cfg):
    p_data_test = np.array(p_data_test)
    s_data_test = np.array(s_data_test)
    noise_data_test = np.array(noise_data_test)
-   test_subset_len = int(0.5 * p_data_test.shape[0])
+
+   test_val_split_ratio = 0.5
    
    random_state = np.random.RandomState(42)  # Set a fixed random seed for consistency
-   random_indices = random_state.choice(len(p_data_test), test_subset_len, replace=False)
+   random_indices = random_state.choice(len(p_data_test), int(test_val_split_ratio * p_data_test.shape[0]), replace=False)
    p_data_test = p_data_test[random_indices]
 
-   random_indices = random_state.choice(len(s_data_test), test_subset_len, replace=False)
+   random_indices = random_state.choice(len(s_data_test), int(test_val_split_ratio * s_data_test.shape[0]), replace=False)
    s_data_test = s_data_test[random_indices]
 
-   random_indices = random_state.choice(len(noise_data_test), test_subset_len * 2, replace=False)
+   random_indices = random_state.choice(len(noise_data_test), int(test_val_split_ratio * noise_data_test.shape[0]), replace=False)
    noise_data_test = noise_data_test[random_indices]
 
    p_data_test = normalize_data(p_data_test)
@@ -151,17 +152,7 @@ def train(cfg):
     batch_size=nncfg.batch_size,
     shuffle=False
    )
-   
-   #dataset = TensorDataset(torch.tensor(X, dtype=torch.float32), torch.tensor(Y, dtype=torch.float))
-   #generator = torch.Generator().manual_seed(50)
-
-   #train_size = int(0.875 * len(dataset))
-   #val_size = len(dataset) - train_size
-   #train_dataset, val_dataset = random_split(dataset, [train_size, val_size], generator=generator)
-   
-   #val_loader = DataLoader(val_dataset, batch_size=nncfg.batch_size, shuffle=False)
-   #train_loader = DataLoader(train_dataset, batch_size=nncfg.batch_size, shuffle=True)
-
+ 
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
    model = None
 
@@ -235,96 +226,3 @@ def train(cfg):
    plot_loss(train_losses, val_loss,  val_acc, cfg.MODEL_FILE_NAME)
    cfg.MODEL_FILE_NAME += ".pt"
 
-
-# Define the objective function for optimization
-def objective(trial):
-    
-   nncfg = NNCFG()
-   nncfg.argParser()
-   cfg = Config()
-   
-
-   hdf5_file = h5py.File(cfg.TRAIN_DATA, 'r')
-   p_data, s_data, noise_data = getWaveData(cfg, hdf5_file)
-   
-   # Data preparation
-   p_data = np.array(p_data)
-   s_data = np.array(s_data)
-   noise_data = np.array(noise_data)
-
-   p_data = pre_proc_data(p_data)
-   s_data = pre_proc_data(s_data)
-   noise_data = pre_proc_data(noise_data)
-
-   positive_data = np.concatenate((p_data , s_data))
-
-   X = np.concatenate([positive_data, noise_data], axis=0)
-   Y = np.array([1] * len(positive_data) + [0] * len(noise_data))  # 1 for P wave, 0 for noise
-
-   dataset = TensorDataset(torch.tensor(X, dtype=torch.float32), torch.tensor(Y, dtype=torch.long))
-
-   train_size = int(0.7 * len(dataset))
-   val_size = len(dataset) - train_size
-   train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-   
-   val_loader = DataLoader(val_dataset, batch_size=nncfg.batch_size, shuffle=False)
-   dataloader = DataLoader(train_dataset, batch_size=nncfg.batch_size, shuffle=True)
-
-   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-   model = None
-
-    # Suggest hyperparameters to optimize
-   conv1_filters = trial.suggest_int("conv1_filters", 8, 32, step=4)
-   conv2_filters = trial.suggest_int("conv2_filters", 2, 16, step=4)
-   fc1_neurons = trial.suggest_int("fc1_neurons", 10, 30, step=4)
-   kernel_size = trial.suggest_int("kernel_size", 3, 7, step=2)
-   learning_rate = trial.suggest_loguniform("learning_rate", 0.0002, 0.005)
-   dropout = trial.suggest_categorical("dropout", [0.1, 0.2, 0.3, 0.4, 0.5])
-
-   # Initialize the model with suggested hyperparameters
-   model = PWaveCNN(window_size=cfg.SAMPLE_WINDOW_SIZE, conv1_filters=conv1_filters, conv2_filters=conv2_filters, fc1_neurons=fc1_neurons, kernel_size=kernel_size, dropout_rate=dropout).to(device)
-   # Loss function and optimizer
-   criterion = nn.CrossEntropyLoss()
-   optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-   # Train the model
-   _train(model, dataloader, val_loader, optimizer, criterion, epoch_iter=10)
-
-   # Evaluate on validation set
-   model.eval()
-   val_loss = 0
-   correct = 0
-   total = 0
-
-   with torch.no_grad():
-      for batch_X, batch_y in val_loader:
-         batch_X, batch_y = batch_X.to(device), batch_y.to(device)
-         outputs = model(batch_X)
-
-         if len(batch_y.shape) > 1:  
-               batch_y = batch_y.argmax(dim=1)
-         else:
-               batch_y = batch_y.view(-1)
-
-         loss = criterion(outputs, batch_y)
-         val_loss += loss.item()
-
-         _, predicted = torch.max(outputs, 1)
-         total += batch_y.size(0)
-         correct += (predicted == batch_y).sum().item()
-
-   val_accuracy = 100 * correct / total  # We aim to maximize this
-   return val_accuracy  # Optuna will maximize validation accuracy
-
-# Run the hyperparameter search
-
-def hyper_param_opt():
-   study = optuna.create_study(direction="maximize")  # Maximizing accuracy
-   study.optimize(objective, n_trials=100)
-
-   # Print best hyperparameters
-   print("Best hyperparameters:", study.best_params)
-
-   with open("hyper_param.txt", "w") as file:
-    print("The best parameters are ", file=file)
-    print(study.best_params, file=file)

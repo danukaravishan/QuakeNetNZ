@@ -4,8 +4,8 @@ Copy_TinyML/
 
 data/*.hdf5
 data/EdgeImpulseCSV/*
-data/train_data
-data/test_data
+data/*train_data*
+data/*test_data*
 
 models/*
 run.sh

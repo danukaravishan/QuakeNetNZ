@@ -31,4 +31,6 @@
 #parallel -j 10 python src/main.py --learning_rate=0.002 --epoch_count=200 --batch_size=1024 --conv1_size=32 --conv2_size=32 --conv3_size=32 --fc1_size=44 --fc2_size=18 --l2_decay={1} --dropout1={2} --dropout2={3} ::: 5e-4 5e-3 8e-4 8e-3 3e-3 2e-3 2e-4 8e-5 2e-5 2e-3 ::: 0.1 0.2 0.3 0.4 0.5  ::: 0.1 0.2 0.3 0.4 0.5
 
 #parallel -j 10 python src/main.py --learning_rate={1} --epoch_count=200 --batch_size=1024 --conv1_size={1} --conv2_size={2} --conv3_size={3} --fc1_size={4} --fc2_size={5} --l2_decay=0.0008 --dropout1=0.3 --dropout2=0.2 ::: 8 16 24 32 44 64 ::: 8 16 32 44 64 ::: 8 16 32 64 88 ::: 16 32 44 64 88 ::: 8 16 32 44 64
-parallel -j 10 python src/main.py --learning_rate={1} --epoch_count=200 --batch_size=1024 --conv1_size=32 --conv2_size=32 --conv3_size=32 --fc1_size=44 --fc2_size=18 --l2_decay=0.0008 --dropout1=0.3 --dropout2=0.2 ::: 0.0001 0.0002 0.0003 0.0004 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 
+#parallel -j 10 python src/main.py --learning_rate={1} --epoch_count=200 --batch_size=1024 --conv1_size=32 --conv2_size=32 --conv3_size=32 --fc1_size=44 --fc2_size=18 --l2_decay=0.0008 --dropout1=0.3 --dropout2=0.2 ::: 0.0001 0.0002 0.0003 0.0004 0.0005 0.0006 0.0007 0.0008 0.0009 0.001 0.002 0.003 0.004 0.005 0.006 0.007 0.008 0.009 0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08 0.09 0.1 0.2 
+
+python src/hyperparam_opt.py 

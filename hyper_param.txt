@@ -1,9 +1,1 @@
-
-Base model
-python src/main.py --learning_rate=0.002 --epoch_count=110 --batch_size=1024 --conv1_size=32 --conv2_size=32 --conv3_size=32 --fc1_size=44 --fc2_size=18
-
-python src/main.py --learning_rate=0.002 --epoch_count=200 --batch_size=1024 --conv1_size=32 --conv2_size=32 --conv3_size=32 --fc1_size=44 --fc2_size=18 --l2_decay=0.0008 --dropout1=0.3 --dropout2=0.2
-
-python src/main.py --learning_rate=0.002 --epoch_count=200 --batch_size=1024 --conv1_size=32 --conv2_size=32 --conv3_size=32 --fc1_size=44 --fc2_size=18 --l2_decay=0.0008 --dropout1=0.3 --dropout2=0.2
-
--- Validation set changed. Hence above result might not be Valid
+Test

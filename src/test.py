@@ -75,31 +75,26 @@ def test(cfg):
    s_data = normalize_data(s_data)
    noise_data = normalize_data(noise_data)
 
-   # test_subset_len = int(0.2 * p_data.shape[0])
 
-   # p_data_test = p_data[test_subset_len:]
-   # s_data_test = s_data[test_subset_len:]
-   # noise_data_test = noise_data[test_subset_len*2:]
-
-   test_subset_len = int(0.5 * p_data.shape[0])
+   test_val_split_ratio = 0.5
 
    random_state = np.random.RandomState(42)  # Set a fixed random seed for consistency
 
 # Get indices for P data
    all_indices_p = np.arange(len(p_data))
-   random_indices_p = random_state.choice(len(p_data), test_subset_len, replace=False)
+   random_indices_p = random_state.choice(len(p_data), int(test_val_split_ratio * p_data.shape[0]), replace=False)
    test_indices_p = np.setdiff1d(all_indices_p, random_indices_p)  # Indices not used in validation
    p_data_test = p_data[test_indices_p]
 
    # Get indices for S data
    all_indices_s = np.arange(len(s_data))
-   random_indices_s = random_state.choice(len(s_data), test_subset_len, replace=False)
+   random_indices_s = random_state.choice(len(s_data), int(test_val_split_ratio * s_data.shape[0]), replace=False)
    test_indices_s = np.setdiff1d(all_indices_s, random_indices_s)  # Indices not used in validation
    s_data_test = s_data[test_indices_s]
 
    # Get indices for noise data
    all_indices_noise = np.arange(len(noise_data))
-   random_indices_noise = random_state.choice(len(noise_data), test_subset_len * 2, replace=False)
+   random_indices_noise = random_state.choice(len(noise_data), int(test_val_split_ratio * noise_data.shape[0]), replace=False)
    test_indices_noise = np.setdiff1d(all_indices_noise, random_indices_noise)  # Indices not used in validation
    noise_data_test = noise_data[test_indices_noise]
 
