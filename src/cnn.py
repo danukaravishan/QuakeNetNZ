@@ -5,6 +5,7 @@ from datetime import datetime
 import random
 import numpy as np
 import secrets
+import pywt
 
 # Random seed
 
@@ -113,7 +114,8 @@ class PWaveCNN(nn.Module):
                  dropout1=0.3 , dropout2=0.3, dropout3=0.2,
                  fc1_neurons=24, fc2_neurons=12,
                  kernel_size1=4, kernel_size2=4, kernel_size3=4,
-                 model_id=""):
+                 model_id="",
+                 wavelet_name='db4', wavelet_level=1):
         
         super(PWaveCNN, self).__init__()
         
@@ -126,15 +128,6 @@ class PWaveCNN(nn.Module):
         conv1_out = window_size - kernel_size1 + 1
         conv2_out = conv1_out - kernel_size2 + 1
         conv3_out = conv2_out - kernel_size3 + 1
-
-        # self.batchnorm1 = nn.BatchNorm1d(conv1_filters)
-        # self.batchnorm2 = nn.BatchNorm1d(conv2_filters)
-        # self.batchnorm3 = nn.BatchNorm1d(conv3_filters)
-
-        # Normalization and Dropout
-        # self.norm1 = nn.LayerNorm([conv1_filters, conv1_out])
-        # self.norm2 = nn.GroupNorm(num_groups=2, num_channels=conv2_filters)
-        # self.norm3 = nn.GroupNorm(num_groups=2, num_channels=conv3_filters)
 
         self.dropout1 = nn.Dropout(p=dropout1)
         self.dropout2 = nn.Dropout(p=dropout2)
@@ -149,30 +142,38 @@ class PWaveCNN(nn.Module):
         random_tag = str(secrets.randbelow(9000) + 1000)
         self.model_id = "cnn_" + datetime.now().strftime("%Y%m%d_%H%M") + "_" + random_tag if model_id == "" else model_id
 
+        self.wavelet_name = wavelet_name
+        self.wavelet_level = wavelet_level
+
+    def wavelet_denoise(self, x_np):
+        # x_np: (channels, length)
+        denoised = []
+        for ch in x_np:
+            coeffs = pywt.wavedec(ch, self.wavelet_name, level=self.wavelet_level)
+            # Simple thresholding: set detail coefficients to zero (can be improved)
+            coeffs[1:] = [pywt.threshold(c, value=0.2 * np.max(np.abs(c)), mode='soft') for c in coeffs[1:]]
+            rec = pywt.waverec(coeffs, self.wavelet_name)
+            # Ensure output length matches input
+            rec = rec[:ch.shape[0]]
+            denoised.append(rec)
+        return np.stack(denoised)
+
     def forward(self, x):
-        # Layer 1
+        # x: (batch, channels, length)
+        x_denoised = []
+        for i in range(x.shape[0]):
+            x_np = x[i].detach().cpu().numpy()
+            x_dn = self.wavelet_denoise(x_np)
+            x_denoised.append(x_dn)
+        x = torch.tensor(np.stack(x_denoised), dtype=x.dtype, device=x.device)
         x = F.relu(self.conv1(x))
-        # x = self.norm1(x)
-
-        # Layer 2
         x = F.relu(self.conv2(x))
-        #x = self.batchnorm2(x)
         x = self.dropout1(x)
-
-        # Layer 3
         x = F.relu(self.conv3(x))
-        #x = self.batchnorm3(x)
-        #x = self.dropout3(x)
-
-        # Flatten
         x = x.view(x.size(0), -1)
-
-        # FC Layers
         x = F.relu(self.fc1(x))
-        x = self.dropout2(x)  # reuse dropout2
+        x = self.dropout2(x)
         x = F.relu(self.fc2(x))
-        
         x = torch.sigmoid(self.fc3(x))
-
         return x
 
