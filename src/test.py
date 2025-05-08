@@ -1,7 +1,7 @@
 from utils import *
 from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE
-from dataprep import pre_proc_data, normalize_data
+from dataprep import pre_proc_data, normalize_data, apply_wavelet_denoise
 
 def loadModelConfig(nncfg, checkpoint):
 
@@ -71,9 +71,9 @@ def test(cfg):
    s_data      = np.array(s_data)
    noise_data  = np.array(noise_data)
 
-   p_data = normalize_data(p_data)
-   s_data = normalize_data(s_data)
-   noise_data = normalize_data(noise_data)
+   p_data = normalize_data(apply_wavelet_denoise(p_data, nncfg.wavelet_name, nncfg.wavelet_level))
+   s_data = normalize_data(apply_wavelet_denoise(s_data, nncfg.wavelet_name, nncfg.wavelet_level))
+   noise_data = normalize_data(apply_wavelet_denoise(noise_data, nncfg.wavelet_name, nncfg.wavelet_level))
 
 
    test_val_split_ratio = 0.5

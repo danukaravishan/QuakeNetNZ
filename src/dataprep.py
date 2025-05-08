@@ -1,6 +1,6 @@
 from utils import *
 from scipy.signal import detrend, butter, filtfilt
-
+import pywt
 
 def demean(signal):
     """Remove the mean from the signal."""
@@ -71,6 +71,17 @@ def energy_normalize(signal):
     return signal / energy if energy != 0 else signal
 
 
+def wavelet_denoise(x_np, wavelet_name, wavelet_level):
+    denoised = []
+    for ch in x_np:
+        coeffs = pywt.wavedec(ch, wavelet_name, level=wavelet_level)
+        coeffs[1:] = [pywt.threshold(c, value=0.2 * np.max(np.abs(c)), mode='soft') for c in coeffs[1:]]
+        rec = pywt.waverec(coeffs, wavelet_name)
+        rec = rec[:ch.shape[0]]  # Ensure output length matches input
+        denoised.append(rec)
+    return np.stack(denoised)
+
+
 def normalize_data(data):
     if data.ndim == 3:  # Case for a set of data
         processed_data = []
@@ -83,6 +94,21 @@ def normalize_data(data):
     else:
         raise ValueError("Input data must have 2 or 3 dimensions.")
 
+
+def apply_wavelet_denoise(waveforms, wavelet_name, wavelet_level):
+
+    if waveforms.ndim == 2:
+        # Single waveform
+        return wavelet_denoise(waveforms, wavelet_name, wavelet_level)
+    elif waveforms.ndim == 3:
+        # Batch of waveforms
+        return np.stack([
+            wavelet_denoise(wf, wavelet_name, wavelet_level) for wf in waveforms
+        ])
+    else:
+        raise ValueError("Input must be of shape (3, 100) or (N, 3, 100)")
+    
+    
 def pre_process_real_time_2s(signal, sampling_rate=50):
     processed_data = []
     for sig in signal:
@@ -152,3 +178,5 @@ def getStreamListFromDatabase(hdf5_file):
     hdf5_file.close()
 
     return p_data, noise_data
+
+

@@ -4,7 +4,7 @@ from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE, NNCFG
 import optuna
 from torch.utils.data import random_split, DataLoader, TensorDataset
-from dataprep import pre_proc_data,normalize, normalize_data
+from dataprep import pre_proc_data,normalize, normalize_data, apply_wavelet_denoise
 import optuna
 import torch
 import torch.nn as nn
@@ -86,9 +86,9 @@ def train(cfg):
    s_data = np.array(s_data)
    noise_data = np.array(noise_data)
 
-   p_data = normalize_data(p_data)
-   s_data = normalize_data(s_data)
-   noise_data = normalize_data(noise_data)
+   p_data = normalize_data(apply_wavelet_denoise(p_data, nncfg.wavelet_name, nncfg.wavelet_level))
+   s_data = normalize_data(apply_wavelet_denoise(s_data, nncfg.wavelet_name, nncfg.wavelet_level))
+   noise_data = normalize_data(apply_wavelet_denoise(noise_data, nncfg.wavelet_name, nncfg.wavelet_level))
 
    ## Merge First 20% of test data into validation set
    hdf5_file_test = h5py.File(cfg.TEST_DATA, 'r')
@@ -110,9 +110,9 @@ def train(cfg):
    random_indices = random_state.choice(len(noise_data_test), int(test_val_split_ratio * noise_data_test.shape[0]), replace=False)
    noise_data_test = noise_data_test[random_indices]
 
-   p_data_test = normalize_data(p_data_test)
-   s_data_test = normalize_data(s_data_test)
-   noise_data_test = normalize_data(noise_data_test)
+   p_data_test = normalize_data(apply_wavelet_denoise(p_data_test, nncfg.wavelet_name, nncfg.wavelet_level))
+   s_data_test = normalize_data(apply_wavelet_denoise(s_data_test, nncfg.wavelet_name, nncfg.wavelet_level))
+   noise_data_test = normalize_data(apply_wavelet_denoise(noise_data_test, nncfg.wavelet_name, nncfg.wavelet_level))
    
    ### 
    positive_data = np.concatenate((p_data , s_data))

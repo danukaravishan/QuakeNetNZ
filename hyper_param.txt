@@ -1,1 +1,2 @@
 Test
+{'conv1_filters': 24, 'conv2_filters': 28, 'conv3_filters': 24, 'fc1_neurons': 44, 'fc2_neurons': 40, 'dropout1': 0.3191923277183404, 'dropout2': 0.4750640144857251, 'dropout3': 0.34509185237249007, 'l2_decay': 0.0003717615671854365, 'kernel_size1': 10, 'kernel_size2': 4, 'kernel_size3': 5, 'learning_rate': 0.00021683919249716394, 'batch_size': 256}

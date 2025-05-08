@@ -114,6 +114,8 @@ class NNCFG:
         self.val_acc               = None
 
         self.model_note            = "Empty"
+        self.wavelet_name          = "db4"
+        self.wavelet_level         = 1
 
 
     def argParser(self):
@@ -147,6 +149,8 @@ class NNCFG:
         
         parser.add_argument('--model_note', type=str, help='Note for  the model identification')
 
+        parser.add_argument('--wavelet_name', type=str, help='Name of the wavelet to use for wavelet denoising')
+        parser.add_argument('--wavelet_level', type=int, help='Level of the wavelet decomposition')
 
         args = parser.parse_args()
 
@@ -176,6 +180,9 @@ class NNCFG:
 
         self.l2_decay       = float(args.l2_decay) if args.l2_decay is not None else self.l2_decay
 
-        self.model_note       = str(args.model_note) if args.model_note is not None else self.model_note
+        self.model_note     = str(args.model_note) if args.model_note is not None else self.model_note
+
+        self.wavelet_name   = str(args.wavelet_name) if args.wavelet_name is not None else self.wavelet_name
+        self.wavelet_level  = int(args.wavelet_level) if args.wavelet_level is not None else self.wavelet_level
 
         print(f"Training Hyperparameter : Learning Rate = {self.learning_rate}, Epoch count = {self.epoch_count}, Batch Size = {self.batch_size}, conv1 = {self.conv1_size}, conv2 = {self.conv2_size}, conv3 = {self.conv3_size}, fc1 {self.fc1_size}, fc2 {self.fc2_size} , CNN filter1 = {self.kernal_size1}, CNN filter2= {self.kernal_size2}, CNN filter3= {self.kernal_size3}") # Add others upon on the requirement

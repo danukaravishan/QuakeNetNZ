@@ -53,7 +53,7 @@ class MobileNet1D(nn.Module):
 
 
 # CNN Larger model -  Reference
-class PWaveCNNRef(nn.Module):
+class PWaveCNN(nn.Module):
     def __init__(self, window_size, 
                  conv1_filters=48, conv2_filters=48, conv3_filters=16,
                  dropout1=0.3 , dropout2=0.3, dropout3=0.2,
@@ -61,7 +61,7 @@ class PWaveCNNRef(nn.Module):
                  kernel_size1=4, kernel_size2=4, kernel_size3=4,
                  model_id=""):
         
-        super(PWaveCNNRef, self).__init__()
+        super(PWaveCNN, self).__init__()
         
         # Convolutional layers
         self.conv1 = nn.Conv1d(3, conv1_filters, kernel_size1)
@@ -88,7 +88,6 @@ class PWaveCNNRef(nn.Module):
     def forward(self, x):
         # Layer 1
         x = F.relu(self.conv1(x))
-        # x = self.norm1(x)
 
         # Layer 2
         x = F.relu(self.conv2(x))
@@ -106,74 +105,3 @@ class PWaveCNNRef(nn.Module):
         x = torch.sigmoid(self.fc3(x))
 
         return x
-
-
-class PWaveCNN(nn.Module):
-    def __init__(self, window_size, 
-                 conv1_filters=48, conv2_filters=48, conv3_filters=16,
-                 dropout1=0.3 , dropout2=0.3, dropout3=0.2,
-                 fc1_neurons=24, fc2_neurons=12,
-                 kernel_size1=4, kernel_size2=4, kernel_size3=4,
-                 model_id="",
-                 wavelet_name='db4', wavelet_level=1):
-        
-        super(PWaveCNN, self).__init__()
-        
-        # Convolutional layers
-        self.conv1 = nn.Conv1d(3, conv1_filters, kernel_size1)
-        self.conv2 = nn.Conv1d(conv1_filters, conv2_filters, kernel_size2)
-        self.conv3 = nn.Conv1d(conv2_filters, conv3_filters, kernel_size3)
-
-        # Compute output sizes
-        conv1_out = window_size - kernel_size1 + 1
-        conv2_out = conv1_out - kernel_size2 + 1
-        conv3_out = conv2_out - kernel_size3 + 1
-
-        self.dropout1 = nn.Dropout(p=dropout1)
-        self.dropout2 = nn.Dropout(p=dropout2)
-        #self.dropout3 = nn.Dropout(p=dropout3)
-
-        # Fully connected layers
-        self.fc1 = nn.Linear(conv3_filters * conv3_out, fc1_neurons)
-        self.fc2 = nn.Linear(fc1_neurons, fc2_neurons)
-        self.fc3 = nn.Linear(fc2_neurons, 1)  # Binary classification
-
-        # Model ID
-        random_tag = str(secrets.randbelow(9000) + 1000)
-        self.model_id = "cnn_" + datetime.now().strftime("%Y%m%d_%H%M") + "_" + random_tag if model_id == "" else model_id
-
-        self.wavelet_name = wavelet_name
-        self.wavelet_level = wavelet_level
-
-    def wavelet_denoise(self, x_np):
-        # x_np: (channels, length)
-        denoised = []
-        for ch in x_np:
-            coeffs = pywt.wavedec(ch, self.wavelet_name, level=self.wavelet_level)
-            # Simple thresholding: set detail coefficients to zero (can be improved)
-            coeffs[1:] = [pywt.threshold(c, value=0.2 * np.max(np.abs(c)), mode='soft') for c in coeffs[1:]]
-            rec = pywt.waverec(coeffs, self.wavelet_name)
-            # Ensure output length matches input
-            rec = rec[:ch.shape[0]]
-            denoised.append(rec)
-        return np.stack(denoised)
-
-    def forward(self, x):
-        # x: (batch, channels, length)
-        x_denoised = []
-        for i in range(x.shape[0]):
-            x_np = x[i].detach().cpu().numpy()
-            x_dn = self.wavelet_denoise(x_np)
-            x_denoised.append(x_dn)
-        x = torch.tensor(np.stack(x_denoised), dtype=x.dtype, device=x.device)
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = self.dropout1(x)
-        x = F.relu(self.conv3(x))
-        x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = self.dropout2(x)
-        x = F.relu(self.fc2(x))
-        x = torch.sigmoid(self.fc3(x))
-        return x
-

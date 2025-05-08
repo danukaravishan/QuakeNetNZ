@@ -5,7 +5,7 @@ from fpdf import FPDF
 import os
 import csv
 from utils import *
-from dataprep import pre_proc_data, normalize_data, pre_process_real_time_2s
+from dataprep import pre_proc_data, normalize_data, pre_process_real_time_2s, apply_wavelet_denoise
 import h5py
 import numpy as np
 import torch
@@ -16,7 +16,7 @@ from obspy import Trace
 import shutil  # For deleting the temporary directory
 
 
-def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sampling_rate=50, window_size=100, stride=10):
+def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, nncfg, sampling_rate=50, window_size=100, stride=10):
     import os
     os.makedirs(output_dir, exist_ok=True)  # Ensure the output directory exists
 
@@ -76,7 +76,7 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, sam
                     # Skip if the segment is smaller than the required window size
                     continue
 
-                segment = normalize_data(segment)
+                segment = normalize_data(apply_wavelet_denoise(segment, nncfg.wavelet_name, nncfg.wavelet_level))
                 input_tensor = torch.tensor(segment, dtype=torch.float32).unsqueeze(0)  # (1, 3, window_size)
                 output = model(input_tensor)
 
@@ -183,7 +183,7 @@ def addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters):
             writer.writerow(['Model ID', 'Accuracy', 'Precision', 'Recall', 'F1 Score', 'Model Parameters', 'Learning Rate', 'Batch size', 'Epoch', 'Optimizer'])
 
         val_acc_index = nncfg.val_acc.index(max(nncfg.val_acc))
-        writer.writerow([model.model_id, f"{accuracy:.4f}%", f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", parameters, nncfg.learning_rate, nncfg.batch_size, nncfg.epoch_count, nncfg.optimizer, nncfg.conv1_size, nncfg.conv2_size, nncfg.conv3_size, nncfg.fc1_size, nncfg.fc2_size, nncfg.kernal_size1, nncfg.kernal_size2, nncfg.kernal_size3, f"{max(nncfg.val_acc):.4f}%", val_acc_index])
+        writer.writerow([model.model_id, f"{accuracy:.4f}%", f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", parameters, nncfg.learning_rate, nncfg.batch_size, nncfg.epoch_count, nncfg.optimizer, nncfg.conv1_size, nncfg.conv2_size, nncfg.conv3_size, nncfg.fc1_size, nncfg.fc2_size, nncfg.kernal_size1, nncfg.kernal_size2, nncfg.kernal_size3, f"{max(nncfg.val_acc):.4f}%", val_acc_index, nncfg.wavelet_name, nncfg.wavelet_level])
     print(f"Model details for {model.model_id} appended to {cfg.CSV_FILE} CSV.")
 
 
@@ -242,7 +242,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
     param_txt1 = f"LR={nncfg.learning_rate}, Batch={nncfg.batch_size}, Epoch={nncfg.epoch_count}, c1={nncfg.conv1_size}, c2={nncfg.conv2_size}, c3={nncfg.conv3_size}, f1={nncfg.fc1_size}, f2={nncfg.fc2_size}, k1=={nncfg.kernal_size1}, k2={nncfg.kernal_size2}, k3={nncfg.kernal_size3}"
     pdf.cell(200, 10, txt=param_txt1, ln=True, align='L')
 
-    param_txt2 = f"L2_decay={nncfg.l2_decay}, droput1={nncfg.dropout1}, droput2={nncfg.dropout2}"
+    param_txt2 = f"L2_decay={nncfg.l2_decay}, droput1={nncfg.dropout1}, droput2={nncfg.dropout2}, wavelet_name={nncfg.wavelet_name}, wavelet_level={nncfg.wavelet_level}"
     pdf.cell(200, 10, txt=param_txt2, ln=True, align='L')
 
     param_txt2 = nncfg.model_note
@@ -260,7 +260,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
         for row in reader:
             event_ids.append(row[0])  # Assuming the first column contains event IDs
 
-    generate_output_for_events(event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model)
+    generate_output_for_events(event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model, nncfg)
 
     # Append waveform graphs to the PDF in the correct order
     for event_id in event_ids:
