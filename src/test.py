@@ -23,46 +23,22 @@ def test(cfg):
 
    if cfg.MODEL_FILE_NAME == "models/model_default.pt":
       model_name = getLatestModelName(cfg)
-      cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model_name
    else:
       print(f"Using the model:  {cfg.MODEL_FILE_NAME} for testing")
+   
+   nncfg.model_id =  os.path.splitext(os.path.basename(cfg.MODEL_FILE_NAME))[0]
 
    if not os.path.isfile(cfg.MODEL_FILE_NAME):
       raise ValueError(f"No model found as :{cfg.MODEL_FILE_NAME}")
    
    model = None
 
-   checkpoint = torch.load(cfg.MODEL_FILE_NAME)
-   loadModelConfig(nncfg, checkpoint)
-
-   if cfg.MODEL_TYPE == MODEL_TYPE.DNN:
-      model = DNN(model_id=nncfg.model_id)
-   elif cfg.MODEL_TYPE == MODEL_TYPE.CNN:
-      model = PWaveCNN(
-         model_id=nncfg.model_id, 
-         window_size=cfg.SAMPLE_WINDOW_SIZE, 
-         conv1_filters=nncfg.conv1_size, 
-         conv2_filters=nncfg.conv2_size, 
-         conv3_filters=nncfg.conv3_size, 
-         fc1_neurons=nncfg.fc1_size, 
-         fc2_neurons=nncfg.fc2_size, 
-         kernel_size1=nncfg.kernal_size1, 
-         kernel_size2=nncfg.kernal_size2, 
-         kernel_size3=nncfg.kernal_size3, 
-         dropout1=nncfg.dropout1, 
-         dropout2=nncfg.dropout2, 
-         dropout3=nncfg.dropout3
-      )
-   elif cfg.MODEL_TYPE == MODEL_TYPE.CRED:
-      assert("This routine is yet to be implemented")
-      model = sbm.PhaseNet(phases="PSN", norm="peak")
-   elif cfg.MODEL_TYPE == MODEL_TYPE.UNET:
-      model = UNet(model_id=nncfg.model_id, in_channels=cfg.UNET_INPUT_SIZE, out_channels=cfg.UNET_OUTPUT_SIZE)
-   else:
-      raise ValueError(f"Invalid model type: {cfg.MODEL_TYPE}")
-   
-   model.load_state_dict(checkpoint['model_state_dict'])
+   #checkpoint = torch.load(cfg.MODEL_FILE_NAME)
+   #loadModelConfig(nncfg, checkpoint)
+   model = torch.jit.load(cfg.MODEL_FILE_NAME)
    model.eval()
+
+   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
    hdf5_file = h5py.File(cfg.TEST_DATA, 'r')
    p_data, s_data, noise_data = getWaveData(cfg, hdf5_file)
@@ -71,16 +47,14 @@ def test(cfg):
    s_data      = np.array(s_data)
    noise_data  = np.array(noise_data)
 
-   p_data = normalize_data(apply_wavelet_denoise(p_data, nncfg.wavelet_name, nncfg.wavelet_level))
-   s_data = normalize_data(apply_wavelet_denoise(s_data, nncfg.wavelet_name, nncfg.wavelet_level))
-   noise_data = normalize_data(apply_wavelet_denoise(noise_data, nncfg.wavelet_name, nncfg.wavelet_level))
-
+   p_data = normalize_data(p_data)
+   s_data = normalize_data(s_data)
+   noise_data = normalize_data(noise_data)
 
    test_val_split_ratio = 0.5
 
    random_state = np.random.RandomState(42)  # Set a fixed random seed for consistency
 
-# Get indices for P data
    all_indices_p = np.arange(len(p_data))
    random_indices_p = random_state.choice(len(p_data), int(test_val_split_ratio * p_data.shape[0]), replace=False)
    test_indices_p = np.setdiff1d(all_indices_p, random_indices_p)  # Indices not used in validation
@@ -98,15 +72,12 @@ def test(cfg):
    test_indices_noise = np.setdiff1d(all_indices_noise, random_indices_noise)  # Indices not used in validation
    noise_data_test = noise_data[test_indices_noise]
 
-
-
    true_vrt    = np.array([1] * len(p_data_test) + [1] * len(s_data_test) +[0] * len(noise_data_test))
-   
    test_vtr    = np.concatenate((p_data_test, s_data_test, noise_data_test))
 
    # Convert to tensor
    test_tensor = torch.tensor(test_vtr, dtype=torch.float32)
-
+   test_tensor = test_tensor.to(device)  # Move to GPU if available
    with torch.no_grad():  # Disable gradients during inference
       predictions = model(test_tensor)
 
@@ -114,7 +85,8 @@ def test(cfg):
    #predicted_classes = torch.argmax(predictions, dim=1)
 
    #Calculate the accuracy. This is tempory calculation
-   true_tensor = torch.tensor(true_vrt, dtype=torch.long) 
+   true_tensor = torch.tensor(true_vrt, dtype=torch.long).to(device)  # Move to GPU if available
+   predicted_classes = predicted_classes.to(device)  # Move to GPU if available
    predicted_classes = predicted_classes.squeeze()
    
    assert (predicted_classes.shape == true_tensor.shape)
@@ -123,6 +95,3 @@ def test(cfg):
    
    if res == 0:
       print("Testing completed successfully")
-
-
-

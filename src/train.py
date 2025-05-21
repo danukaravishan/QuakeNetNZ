@@ -29,7 +29,8 @@ def _train(model, dataloader, val_loader, optimizer, criterion, epoch_iter=50):
          batch_X, batch_y = batch_X.to(device), batch_y.to(device)
          optimizer.zero_grad()
          output = model(batch_X)
-         loss = criterion(output.squeeze(), batch_y)
+         #loss = criterion(output.squeeze(), batch_y)
+         loss = criterion(output.view(-1), batch_y)
          loss.backward()
          optimizer.step()
          epoch_loss+= loss.item()
@@ -86,9 +87,9 @@ def train(cfg):
    s_data = np.array(s_data)
    noise_data = np.array(noise_data)
 
-   p_data = normalize_data(apply_wavelet_denoise(p_data, nncfg.wavelet_name, nncfg.wavelet_level))
-   s_data = normalize_data(apply_wavelet_denoise(s_data, nncfg.wavelet_name, nncfg.wavelet_level))
-   noise_data = normalize_data(apply_wavelet_denoise(noise_data, nncfg.wavelet_name, nncfg.wavelet_level))
+   p_data = normalize_data(p_data)
+   s_data = normalize_data(s_data)
+   noise_data = normalize_data(noise_data)
 
    ## Merge First 20% of test data into validation set
    hdf5_file_test = h5py.File(cfg.TEST_DATA, 'r')
@@ -110,9 +111,9 @@ def train(cfg):
    random_indices = random_state.choice(len(noise_data_test), int(test_val_split_ratio * noise_data_test.shape[0]), replace=False)
    noise_data_test = noise_data_test[random_indices]
 
-   p_data_test = normalize_data(apply_wavelet_denoise(p_data_test, nncfg.wavelet_name, nncfg.wavelet_level))
-   s_data_test = normalize_data(apply_wavelet_denoise(s_data_test, nncfg.wavelet_name, nncfg.wavelet_level))
-   noise_data_test = normalize_data(apply_wavelet_denoise(noise_data_test, nncfg.wavelet_name, nncfg.wavelet_level))
+   p_data_test = normalize_data(p_data_test)
+   s_data_test = normalize_data(s_data_test)
+   noise_data_test = normalize_data(noise_data_test)
    
    ### 
    positive_data = np.concatenate((p_data , s_data))
@@ -156,6 +157,8 @@ def train(cfg):
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
    model = None
 
+   # Remove random initialisation
+
    ## Train the model. For now, thinking that all the type of models can take same kind of input
    if (cfg.MODEL_TYPE == MODEL_TYPE.CNN):
       model = PWaveCNN( 
@@ -185,14 +188,12 @@ def train(cfg):
       optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
       model, train_losses = _train(model, train_loader, optimizer, criterion, nncfg.epoch_count)
 
-   elif cfg.MODEL_TYPE == MODEL_TYPE.DNN:
-      model = DNN().to(device)
-      model.apply(InitWeights)
-      #criterion = nn.CrossEntropyLoss()
-      optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate)
-      criterion = nn.BCEWithLogitsLoss()
-      model, train_losses = _train(model, train_loader, optimizer, criterion, nncfg.epoch_count)
-
+   elif cfg.MODEL_TYPE == MODEL_TYPE.PDetector:
+      model = PDetector().to(device)
+      criterion = nn.BCELoss()
+      optimizer = torch.optim.Adam(model.parameters())
+      model, train_losses, val_loss, val_acc = _train(model, train_loader, val_loader, optimizer, criterion, nncfg.epoch_count)
+   
    elif cfg.MODEL_TYPE == MODEL_TYPE.PhaseNet:
          model = sbm.PhaseNet(phases="PSN", norm="peak")
          #criterion = nn.CrossEntropyLoss()
@@ -212,16 +213,21 @@ def train(cfg):
    cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model.model_id
 
    # Save the model
-   torch.save({
-      'model_state_dict': model.state_dict(),
-      'model_id'        : model.model_id,  # Save model ID
-      'epoch_count'     : nncfg.epoch_count,
-      'learning_rate'   : nncfg.learning_rate,
-      'batch_size'      : nncfg.batch_size,
-      'optimizer'       : optimizer.__class__.__name__.lower(),
-      'training_loss'   : train_losses,
-      'validation_acc' :  val_acc
-   }, cfg.MODEL_FILE_NAME + ".pt")
+   # torch.save({
+   #    'model_state_dict': model.state_dict(),
+   #    'model_id'        : model.model_id,  # Save model ID
+   #    'epoch_count'     : nncfg.epoch_count,
+   #    'learning_rate'   : nncfg.learning_rate,
+   #    'batch_size'      : nncfg.batch_size,
+   #    'optimizer'       : optimizer.__class__.__name__.lower(),
+   #    'training_loss'   : train_losses,
+   #    'validation_acc' :  val_acc
+   # }, cfg.MODEL_FILE_NAME + ".pt")
+
+   sample = torch.tensor(X_train[0], dtype=torch.float32).unsqueeze(0)
+   sample = sample.to(device)
+   traced_model = torch.jit.trace(model, sample)
+   torch.jit.save(traced_model, cfg.MODEL_FILE_NAME+".pt")
 
    plot_loss(train_losses, val_loss,  val_acc, cfg.MODEL_FILE_NAME)
    cfg.MODEL_FILE_NAME += ".pt"

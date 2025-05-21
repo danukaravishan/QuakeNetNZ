@@ -19,6 +19,7 @@ import shutil  # For deleting the temporary directory
 def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, nncfg, sampling_rate=50, window_size=100, stride=10):
     import os
     os.makedirs(output_dir, exist_ok=True)  # Ensure the output directory exists
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     with h5py.File(hdf5_file_path, 'r') as hdf:
         for idx, event_id in enumerate(event_ids, 1):  # Add counter using enumerate
@@ -76,9 +77,9 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, nnc
                     # Skip if the segment is smaller than the required window size
                     continue
 
-                segment = normalize_data(apply_wavelet_denoise(segment, nncfg.wavelet_name, nncfg.wavelet_level))
+                segment = normalize_data(segment)
                 input_tensor = torch.tensor(segment, dtype=torch.float32).unsqueeze(0)  # (1, 3, window_size)
-                output = model(input_tensor)
+                output = model(input_tensor.to(device))
 
                 cl_out = output > 0.9
                 classified_output.append(cl_out.item())
@@ -182,9 +183,9 @@ def addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters):
         if not file_exists:
             writer.writerow(['Model ID', 'Accuracy', 'Precision', 'Recall', 'F1 Score', 'Model Parameters', 'Learning Rate', 'Batch size', 'Epoch', 'Optimizer'])
 
-        val_acc_index = nncfg.val_acc.index(max(nncfg.val_acc))
-        writer.writerow([model.model_id, f"{accuracy:.4f}%", f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", parameters, nncfg.learning_rate, nncfg.batch_size, nncfg.epoch_count, nncfg.optimizer, nncfg.conv1_size, nncfg.conv2_size, nncfg.conv3_size, nncfg.fc1_size, nncfg.fc2_size, nncfg.kernal_size1, nncfg.kernal_size2, nncfg.kernal_size3, f"{max(nncfg.val_acc):.4f}%", val_acc_index, nncfg.wavelet_name, nncfg.wavelet_level])
-    print(f"Model details for {model.model_id} appended to {cfg.CSV_FILE} CSV.")
+        #val_acc_index = nncfg.val_acc.index(max(nncfg.val_acc))
+        writer.writerow([nncfg.model_id, f"{accuracy:.4f}%", f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", parameters, nncfg.learning_rate, nncfg.batch_size, nncfg.epoch_count, nncfg.optimizer, nncfg.conv1_size, nncfg.conv2_size, nncfg.conv3_size, nncfg.fc1_size, nncfg.fc2_size, nncfg.kernal_size1, nncfg.kernal_size2, nncfg.kernal_size3, nncfg.wavelet_name, nncfg.wavelet_level])
+    print(f"Model details for {nncfg.model_id} appended to {cfg.CSV_FILE} CSV.")
 
 
 # Function to dump all model details into a seperate pdf file
@@ -214,19 +215,19 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
 
     # Add the model ID as the title
     pdf.set_font("Arial", "B", 16)
-    pdf.cell(200, 10, txt=f"Model: {model.model_id}", ln=True, align='C')
+    pdf.cell(200, 10, txt=f"Model: {nncfg.model_id}", ln=True, align='C')
 
     # Add the loss curve title and image
     pdf.cell(200, 10, txt="Training Loss Curve", ln=True, align='C')
 
-    loss_curve_image = cfg.MODEL_PATH + model.model_id + ".jpg"
+    loss_curve_image = cfg.MODEL_PATH + nncfg.model_id + ".jpg"
     
     if os.path.exists(loss_curve_image):
         pdf.image(loss_curve_image, x=10, y=30, w=180)  # Adjust the position (x, y) and size (w)
         pdf.ln(300)
         os.remove(loss_curve_image)  # Remove the image file after adding to the PDF
     else:
-        print(f"Loss curve not found for {model.model_id}")
+        print(f"Loss curve not found for {nncfg.model_id}")
 
     pdf.set_font("Arial", size=12)
 
@@ -236,8 +237,8 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
     pdf.cell(200, 10, txt=f"Recall: {recall:.4f}%", ln=True, align='L')
     pdf.cell(200, 10, txt=f"F1 Score: {f1:.4f}%", ln=True, align='L')
     pdf.cell(200, 10, txt=f"Parameters: {parameters}", ln=True, align='L')
-    pdf.cell(200, 10, txt=f"Max val acc: {max(nncfg.val_acc):.4f}", ln=True, align='L')
-    pdf.cell(200, 10, txt=f"Max val acc index: {nncfg.val_acc.index(max(nncfg.val_acc))}", ln=True, align='L')
+    #pdf.cell(200, 10, txt=f"Max val acc: {max(nncfg.val_acc):.4f}", ln=True, align='L')
+    #pdf.cell(200, 10, txt=f"Max val acc index: {nncfg.val_acc.index(max(nncfg.val_acc))}", ln=True, align='L')
 
     param_txt1 = f"LR={nncfg.learning_rate}, Batch={nncfg.batch_size}, Epoch={nncfg.epoch_count}, c1={nncfg.conv1_size}, c2={nncfg.conv2_size}, c3={nncfg.conv3_size}, f1={nncfg.fc1_size}, f2={nncfg.fc2_size}, k1=={nncfg.kernal_size1}, k2={nncfg.kernal_size2}, k3={nncfg.kernal_size3}"
     pdf.cell(200, 10, txt=param_txt1, ln=True, align='L')
@@ -249,7 +250,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
     pdf.cell(200, 10, txt=param_txt2, ln=True, align='L')
 
     # Create a temporary directory for waveform graphs
-    temp_dir = os.path.join(cfg.MODEL_PATH, f"{model.model_id}_waveforms")
+    temp_dir = os.path.join(cfg.MODEL_PATH, f"{nncfg.model_id}_waveforms")
     os.makedirs(temp_dir, exist_ok=True)
 
     # Generate waveform graphs
@@ -271,7 +272,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
             pdf.image(image_path, x=10, y=10, w=180)
 
     # Save the PDF
-    pdf_filename = cfg.MODEL_PATH + model.model_id + ".pdf"
+    pdf_filename = cfg.MODEL_PATH + nncfg.model_id + ".pdf"
     pdf.output(pdf_filename)
     print(f"Write output to {pdf_filename}")
 

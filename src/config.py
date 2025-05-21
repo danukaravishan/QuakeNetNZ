@@ -18,6 +18,7 @@ class MODEL_TYPE(Enum):
     PhaseNet    = 4
     CRED        = 5
     MobileNet1D = 6
+    PDetector   =  7
 
 
 ## This class has all the configurations that control the scripts
@@ -97,11 +98,11 @@ class NNCFG:
         self.model_id               = None
 
         # CNN Model size parameters
-        self.conv1_size            = 16
-        self.conv2_size            = 16
-        self.conv3_size            = 16
-        self.fc1_size              = 16
-        self.fc2_size              = 16
+        self.conv1_size            = 32
+        self.conv2_size            = 32
+        self.conv3_size            = 32
+        self.fc1_size              = 44
+        self.fc2_size              = 18
         self.kernal_size1           = 4
         self.kernal_size2           = 4
         self.kernal_size3           = 4

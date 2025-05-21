@@ -18,7 +18,7 @@ import uuid
 import matplotlib.pyplot as plt
 
 ## ML libraries
-from cnn import PWaveCNN, MobileNet1D
+from cnn import PWaveCNN, MobileNet1D, PDetector
 from dnn import DNN
 from dnn import InitWeights
 from cred import CRED
