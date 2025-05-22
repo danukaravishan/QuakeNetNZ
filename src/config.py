@@ -26,11 +26,12 @@ class Config:
     def __init__(self):
         
         #set program mode
-        self.MODE               = MODE_TYPE.ALL
+        self.MODE               = MODE_TYPE.EXTRACT_DATA
         self.MODEL_TYPE         = MODEL_TYPE.CNN
         # File paths
+        self.ORIGINAL_DB_FILE   = "/Users/user/Downloads/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
-        self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
+        #self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
         
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
@@ -41,7 +42,7 @@ class Config:
         self.DATABASE_FILE  = "data/waveform_2s_data.hdf5" # Overide if file alreay exist
         self.ORIGINAL_SAMPLING_RATE = 50 # Most of the data points are in this category. Hence choosing as the base sampling rate
         self.TRAINING_WINDOW        = 2 # in seconds
-        self.BASE_SAMPLING_RATE     = 50
+        self.BASE_SAMPLING_RATE     = 100
         self.SHIFT_WINDOW           = 10
         self.DATA_EXTRACTED_FILE    = f"data/waveform_2s_data.hdf5"
         

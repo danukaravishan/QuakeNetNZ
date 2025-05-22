@@ -124,7 +124,27 @@ def downsample(data, original_rate, target_rate):
     downsample_factor = int(target_rate // original_rate)
     return decimate(data, downsample_factor, axis=1, zero_phase=True)
 
+def upsample(data, original_rate, target_rate):
+    upsample_factor = target_rate / original_rate
+    num_samples = int(data.shape[1] * upsample_factor)
+    return scipy.signal.resample(data, num_samples, axis=1)
 
+
+def resample_data(data, original_rate, target_rate):
+    """
+    Resamples the data to the target_rate. Upsamples if target_rate > original_rate,
+    downsamples if target_rate < original_rate.
+    """
+    if target_rate == original_rate:
+        return data
+    elif target_rate > original_rate:
+        upsample_factor = target_rate / original_rate
+        num_samples = int(data.shape[1] * upsample_factor)
+        return scipy.signal.resample(data, num_samples, axis=1)
+    else:
+        downsample_factor = int(original_rate // target_rate)
+        return scipy.signal.decimate(data, downsample_factor, axis=1, zero_phase=True)
+    
 # Extract data from STEAD database
 def extract_stead_data(cfg=None):
 
@@ -443,7 +463,7 @@ def extract_data(cfg=None):
     if os.path.isfile(cfg.DATA_EXTRACTED_FILE):
         os.remove(cfg.DATA_EXTRACTED_FILE)
 
-    stead_noise_data = np.load("stead_samples_80000.npy")
+    #stead_noise_data = np.load("stead_samples_80000.npy")
 
     with h5py.File(cfg.DATA_EXTRACTED_FILE, 'a') as hdf:
         
@@ -496,13 +516,22 @@ def extract_data(cfg=None):
 
             data_pre_proc = pre_proc_data(data, sampling_rate=sampling_rate)
 
+            # if sampling_rate != cfg.BASE_SAMPLING_RATE:
+            #     data_pre_proc = downsample(data_pre_proc, cfg.BASE_SAMPLING_RATE, sampling_rate)
+            #     downsample_factor = int(sampling_rate // cfg.BASE_SAMPLING_RATE)
+            #     p_arrival_index = int(p_arrival_index/downsample_factor)
+            #     s_arrival_index = int(s_arrival_index/downsample_factor)
+            #     sampling_rate = cfg.BASE_SAMPLING_RATE
+
             if sampling_rate != cfg.BASE_SAMPLING_RATE:
-                data_pre_proc = downsample(data_pre_proc, cfg.BASE_SAMPLING_RATE, sampling_rate)
-                downsample_factor = int(sampling_rate // cfg.BASE_SAMPLING_RATE)
-                p_arrival_index = int(p_arrival_index/downsample_factor)
-                s_arrival_index = int(s_arrival_index/downsample_factor)
+                original_length = data_pre_proc.shape[1]
+                data_pre_proc = resample_data(data_pre_proc, sampling_rate, cfg.BASE_SAMPLING_RATE)
+                new_length = data_pre_proc.shape[1]
+                # Adjust indices proportionally for both upsampling and downsampling
+                p_arrival_index = int(p_arrival_index * new_length / original_length)
+                s_arrival_index = int(s_arrival_index * new_length / original_length)
                 sampling_rate = cfg.BASE_SAMPLING_RATE
-            
+                
             count += 1
             
             ## Give temporal shift to the data
