@@ -46,12 +46,13 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, nnc
 
             if dataset.attrs["sampling_rate"] != sampling_rate:
                 original_rate = dataset.attrs["sampling_rate"]
+                # Compute the new number of samples for the target rate
                 num_samples = int(data.shape[1] * sampling_rate / original_rate)
                 data = np.array([resample(channel, num_samples) for channel in data])
                 data_pp = np.array([resample(channel, num_samples) for channel in data_pp])
-                downsample_factor = original_rate / sampling_rate
-                p_arrival_index = int(p_arrival_index / downsample_factor)
-                s_arrival_index = int(s_arrival_index / downsample_factor)
+                resample_factor = sampling_rate / original_rate  # >1 for upsampling, <1 for downsampling
+                p_arrival_index = int(p_arrival_index * resample_factor)
+                s_arrival_index = int(s_arrival_index * resample_factor)
 
             # Convert indices to time
             p_wave_time = p_arrival_index / sampling_rate
@@ -261,7 +262,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
         for row in reader:
             event_ids.append(row[0])  # Assuming the first column contains event IDs
 
-    generate_output_for_events(event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model, nncfg)
+    generate_output_for_events(event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model, nncfg, cfg.BASE_SAMPLING_RATE, cfg.SAMPLE_WINDOW_SIZE)
 
     # Append waveform graphs to the PDF in the correct order
     for event_id in event_ids:

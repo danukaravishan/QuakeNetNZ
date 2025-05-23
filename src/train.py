@@ -193,6 +193,13 @@ def train(cfg):
       criterion = nn.BCELoss()
       optimizer = torch.optim.Adam(model.parameters())
       model, train_losses, val_loss, val_acc = _train(model, train_loader, val_loader, optimizer, criterion, nncfg.epoch_count)
+
+   elif cfg.MODEL_TYPE == MODEL_TYPE.TFEQ:
+      model = TFEQ().to(device)
+      #criterion = nn.CrossEntropyLoss()
+      criterion = nn.BCELoss()
+      optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate, weight_decay=nncfg.l2_decay)
+      model, train_losses, val_loss, val_acc = _train(model, train_loader, val_loader, optimizer, criterion, nncfg.epoch_count)
    
    elif cfg.MODEL_TYPE == MODEL_TYPE.PhaseNet:
          model = sbm.PhaseNet(phases="PSN", norm="peak")
@@ -212,23 +219,11 @@ def train(cfg):
    
    cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model.model_id
 
-   # Save the model
-   # torch.save({
-   #    'model_state_dict': model.state_dict(),
-   #    'model_id'        : model.model_id,  # Save model ID
-   #    'epoch_count'     : nncfg.epoch_count,
-   #    'learning_rate'   : nncfg.learning_rate,
-   #    'batch_size'      : nncfg.batch_size,
-   #    'optimizer'       : optimizer.__class__.__name__.lower(),
-   #    'training_loss'   : train_losses,
-   #    'validation_acc' :  val_acc
-   # }, cfg.MODEL_FILE_NAME + ".pt")
-
    sample = torch.tensor(X_train[0], dtype=torch.float32).unsqueeze(0)
    sample = sample.to(device)
-   traced_model = torch.jit.trace(model, sample)
-   torch.jit.save(traced_model, cfg.MODEL_FILE_NAME+".pt")
+   scripted_model = torch.jit.script(model)
+   #traced_model = torch.jit.trace(model, sample)
+   torch.jit.save(scripted_model, cfg.MODEL_FILE_NAME+".pt")
 
    plot_loss(train_losses, val_loss,  val_acc, cfg.MODEL_FILE_NAME)
    cfg.MODEL_FILE_NAME += ".pt"
-

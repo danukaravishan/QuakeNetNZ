@@ -18,7 +18,8 @@ class MODEL_TYPE(Enum):
     PhaseNet    = 4
     CRED        = 5
     MobileNet1D = 6
-    PDetector   =  7
+    PDetector   = 7
+    TFEQ        = 8
 
 
 ## This class has all the configurations that control the scripts
@@ -27,21 +28,23 @@ class Config:
         
         #set program mode
         self.MODE               = MODE_TYPE.ALL
-        self.MODEL_TYPE         = MODEL_TYPE.CNN
+        self.MODEL_TYPE         = MODEL_TYPE.TFEQ
         # File paths
         #self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
         self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
         
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
-        self.MODEL_FILE_NAME    = "models/cnn_20250401_0216_9867.pt_ts.pt" # default model name : model_default.pt. If this is changed, new name will considered as the model_name for testing
+        #self.MODEL_FILE_NAME    = "models/cnn_20250401_0216_9867.pt_ts.pt" # default model name : model_default.pt. If this is changed, new name will considered as the model_name for testing
+        self.MODEL_FILE_NAME    = "models/cnn_20250521_1658_3785.pt" # default model name : model_default.pt. If this is changed, new name will considered as the model_name for testing
+        
         self.MODEL_PATH         = "models/"
 
         # Below parameters are used in extract_db script to extract certain window in database
         self.DATABASE_FILE  = "data/waveform_2s_data.hdf5" # Overide if file alreay exist
         self.ORIGINAL_SAMPLING_RATE = 50 # Most of the data points are in this category. Hence choosing as the base sampling rate
         self.TRAINING_WINDOW        = 2 # in seconds
-        self.BASE_SAMPLING_RATE     = 50
+        self.BASE_SAMPLING_RATE     = 100
         self.SHIFT_WINDOW           = 10
         self.DATA_EXTRACTED_FILE    = f"data/waveform_2s_data.hdf5"
         
