@@ -30,8 +30,9 @@ class Config:
         self.MODE               = MODE_TYPE.ALL
         self.MODEL_TYPE         = MODEL_TYPE.TFEQ
         # File paths
+        self.ORIGINAL_DB_FILE   = "/Users/user/Downloads/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
-        self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
+        #self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
         
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"

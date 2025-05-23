@@ -27,6 +27,7 @@ from unet import uNet
 from torch.utils.data import DataLoader, TensorDataset
 import torch
 import torch.nn as nn
+from dataprep import pre_proc_data
 
 from report   import *
 
@@ -56,7 +57,7 @@ def getLatestModelName(cfg):
     return latest_model_file
 
 
-def plot_waveform_with_picks(dataset):
+def plot_waveform_with_picks(event_id, hdf5_file):
     """
     Plots the waveform data and marks the P and S wave picks using their attributes.
 
@@ -64,37 +65,66 @@ def plot_waveform_with_picks(dataset):
         dataset (h5py.Dataset): The waveform dataset containing the data and attributes.
         sampling_rate (int): The sampling rate of the waveform data.
     """
-    # Extract waveform data
-    data = np.array(dataset)
 
-    # Get P and S wave pick times from attributes
-    p_pick_time = dataset.attrs.get("trace_p_arrival_sample", None)
-    s_pick_time = dataset.attrs.get("trace_s_arrival_sample", None)
-    # Convert pick times to indices if they exist
-    p_arrival_index = int(p_pick_time) if not np.isnan(p_pick_time) else None
-    s_arrival_index = int(s_pick_time) if not np.isnan(s_pick_time) else None
+    with h5py.File(hdf5_file, 'r') as hdf:
+        dataset = hdf[event_id]
+    
+        data = np.array(dataset)
+        sampling_rate = dataset.attrs.get("sampling_rate", None)
+        data_pre_proc = pre_proc_data(data, sampling_rate=sampling_rate)
 
-    plt.figure(figsize=(12, 6))
+        # Get P and S wave pick times from attributes
+        p_pick_time = dataset.attrs.get("p_arrival_sample", None)
+        s_pick_time = dataset.attrs.get("s_arrival_sample", None)
+        # Convert pick times to indices if they exist
+        p_arrival_index = int(p_pick_time) if not np.isnan(p_pick_time) else None
+        s_arrival_index = int(s_pick_time) if not np.isnan(s_pick_time) else None
 
-    # Plot each channel in the dataset
-    for i, channel in enumerate(data):
-        plt.plot(channel, label=f"Channel {i+1}")
+        epicentral_distance = dataset.attrs.get("epicentral_distance", None)
+        magnitude = dataset.attrs.get("magnitude", None)
+        
+        plt.figure(figsize=(12, 6))
 
-    # Mark the P-wave arrival if available
-    if p_arrival_index is not None:
-        plt.axvline(x=p_arrival_index, color='r', linestyle='--', label='P-wave Pick')
+        # Plot each channel in the dataset
+        plt.subplot(2, 1, 1)
+        for i, channel in enumerate(data):
+            plt.plot(channel, label=f"Channel {i+1}")
 
-    # Mark the S-wave arrival if available
-    if s_arrival_index is not None:
-        plt.axvline(x=s_arrival_index, color='b', linestyle='--', label='S-wave Pick')
+        # Mark the P-wave arrival if available
+        if p_arrival_index is not None:
+            plt.axvline(x=p_arrival_index, color='r', linestyle='--', label='P-wave Pick')
+            if sampling_rate is not None:
+                plt.axvline(x=p_arrival_index - sampling_rate * 1, color='r', linestyle=':', label='P-wave Window Start')
+                plt.axvline(x=p_arrival_index + sampling_rate * 1, color='r', linestyle=':', label='P-wave Window End')
 
-    plt.title("Waveform with P and S Wave Picks")
-    plt.xlabel("Sample Index")
-    plt.ylabel("Amplitude")
-    plt.legend()
-    plt.grid()
-    plt.show()
+        # Mark the S-wave arrival if available
+        if s_arrival_index is not None:
+            plt.axvline(x=s_arrival_index, color='b', linestyle='--', label='S-wave Pick')
 
+        plt.title(f"Waveform with P and S Wave Picks, Event {event_id} , Magnitude {magnitude}, Epicentral Distance {epicentral_distance}")
+        plt.xlabel("Sample Index")
+        plt.ylabel("Amplitude")
+        plt.legend()
+        plt.grid()
+
+        plt.subplot(2, 1, 2)
+        for i, channel in enumerate(data_pre_proc):
+            plt.plot(channel, label=f"Channel {i+1}")
+        if p_arrival_index is not None:
+            plt.axvline(x=p_arrival_index, color='r', linestyle='--', label='P-wave Pick')
+            if sampling_rate is not None:
+                plt.axvline(x=p_arrival_index - sampling_rate * 1, color='r', linestyle=':', label='P-wave Window Start')
+                plt.axvline(x=p_arrival_index + sampling_rate * 1, color='r', linestyle=':', label='P-wave Window End')
+        if s_arrival_index is not None:
+            plt.axvline(x=s_arrival_index, color='b', linestyle='--', label='S-wave Pick')
+        plt.title(f"Pre-processed Waveform with P and S Wave Picks, Event {event_id}")
+        plt.xlabel("Sample Index")
+        plt.ylabel("Amplitude")
+        plt.legend()
+        plt.grid()
+
+        plt.tight_layout()
+        plt.show()
 
 def count_records_in_hdf5_groups(hdf5_file_path):
     """
