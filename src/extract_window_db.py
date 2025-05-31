@@ -451,6 +451,153 @@ def merge_new_data(file_path, cfg=None):
     print ("Number of records " + str(count))
 
 
+
+def extract_p_data_for_new_data(cfg=None):
+
+    print("Extracting data from the 90  geonet database")
+    if cfg is None:
+        cfg = Config()
+
+    hdf5_file = h5py.File(cfg.ORIGINAL_DB_FILE, 'r')
+
+    if os.path.isfile(cfg.DATA_EXTRACTED_FILE):
+        os.remove(cfg.DATA_EXTRACTED_FILE)
+
+    #stead_noise_data = np.load("stead_samples_80000.npy")
+
+    with h5py.File(cfg.DATA_EXTRACTED_FILE, 'a') as hdf:
+        
+        # Create database groups
+        if 'positive_samples_p' not in hdf:
+            positive_group_p = hdf.create_group('positive_samples_p')
+        else:
+            positive_group_p = hdf['positive_samples_p']
+
+        if "negative_sample_group" not in hdf:
+            negative_group = hdf.create_group('negative_sample_group')
+        else:
+            negative_group = hdf['negative_sample_group']
+
+        count = 0
+        non_p_arrival_count = 0
+        
+        for event_id in hdf5_file["data"].keys():  # Directly iterate over the keys in the HDF5 file
+
+            dataset = hdf5_file["data"].get(event_id)
+            data = np.array(dataset)
+
+            p_arrival_sample = dataset.attrs.get("p_arrival_sample", None)
+            if p_arrival_sample is None or str(p_arrival_sample).strip() == "" or str(p_arrival_sample).lower() == "nan":
+                print(f"Skipping event {event_id}: empty p_arrival_sample ({p_arrival_sample})")
+                non_p_arrival_count +=1
+                continue
+            p_arrival_index = int(float(p_arrival_sample))
+
+            sampling_rate = int(dataset.attrs["sampling_rate"])
+
+            data_pre_proc = pre_proc_data(data, sampling_rate=sampling_rate)
+
+            if sampling_rate != cfg.BASE_SAMPLING_RATE:
+                original_length = data_pre_proc.shape[1]
+                data_pre_proc = resample_data(data_pre_proc, sampling_rate, cfg.BASE_SAMPLING_RATE)
+                new_length = data_pre_proc.shape[1]
+                # Adjust indices proportionally for both upsampling and downsampling
+                p_arrival_index = int(p_arrival_index * new_length / original_length)
+                sampling_rate = cfg.BASE_SAMPLING_RATE
+                
+            if data_pre_proc.shape[1] <= p_arrival_index:
+                continue
+            
+            if p_arrival_index < 0:
+                continue
+
+            ## Give temporal shift to the data
+            SHIFT_RANGE_SEC = 0.5  # Max shift in seconds (±0.5 sec)
+            
+            shift_samples = int(SHIFT_RANGE_SEC * sampling_rate)
+            random_shifts_p = np.random.randint(-shift_samples, shift_samples + 1)
+
+            # Modify P and S indices
+            new_p_indices = np.clip(p_arrival_index + random_shifts_p, 0, len(data[0]) - 1)
+
+            # Extract wave data
+            window_size = int(cfg.TRAINING_WINDOW * sampling_rate)
+            p_data  = extract_wave_window(data_pre_proc, new_p_indices, window_size)
+
+            # Add noise samples
+            # start_index = 0
+            # end_index = max(1, p_arrival_index - window_size)  # Ensure at least one sample is available
+            # random_index1 = np.random.randint(start_index, end_index)
+            # random_index2 = np.random.randint(start_index, end_index)
+
+            exclude_start = max(0, p_arrival_index - 2*sampling_rate)
+            exclude_end = min(data.shape[1], p_arrival_index + 2*sampling_rate)
+
+            # Build a list of valid start indices for the noise window
+            valid_indices = list(range(20, data.shape[1] - window_size + 1 - 10)) # Ignore the first 20 samples and last 10 samples due to edge effect of the signals
+            valid_indices = [i for i in valid_indices if i + window_size <= exclude_start or i >= exclude_end]
+
+            if len(valid_indices) < 2:
+                print(f"Not enough valid noise windows for event {event_id}")
+                continue
+
+            random_index1, random_index2 = np.random.choice(valid_indices, size=2, replace=False)   
+            resample_factor =  data_pre_proc.shape[1] / data.shape[1] # since p_wave_index is updated with the new pre processed data
+            random_index2 = int(random_index2 * resample_factor)
+
+            unprocessed_noise_data = data[:, random_index1:random_index1 + window_size]
+            noise_data = data_pre_proc[:, random_index2:random_index2 + window_size]
+            
+            # Ensure the extracted noise sample has the correct shape
+
+            if noise_data.shape[1] < window_size:
+                padding = np.random.normal(0, 0.00001, (data.shape[0], window_size - noise_data.shape[1]))
+                noise_data = np.concatenate((noise_data, padding), axis=1)
+
+            if p_data is not None and p_data.shape[1] < window_size:
+                padding = np.random.normal(0, 0.000001, (p_data.shape[0], window_size - p_data.shape[1]))
+                p_data = np.concatenate((padding, p_data), axis=1)
+
+            if unprocessed_noise_data.shape[1] < window_size:
+                padding = np.random.normal(0, 0.00001, (data.shape[0], window_size - unprocessed_noise_data.shape[1]))
+                unprocessed_noise_data = np.concatenate((unprocessed_noise_data, padding), axis=1)
+
+            if np.random.choice([True, False]):
+                NOISE_MEAN = 0  # Gaussian noise mean
+                NOISE_STD = 0.00001  # Gaussian noise std deviation
+                unprocessed_noise_data += np.random.normal(NOISE_MEAN, NOISE_STD, unprocessed_noise_data.shape)
+
+            if ( (len(p_data[0]) != window_size) or (len(noise_data[0]) != window_size) or (len(unprocessed_noise_data[0]) != window_size)):
+                print("Wrong data  ====== : "+event_id)
+                continue
+
+            ## Add data to each groups
+            if event_id not in positive_group_p:
+                positive_p_dataset = positive_group_p.create_dataset(event_id, data=p_data)
+            else:
+                print(f"Dataset {event_id} already exists in positive_samples_p. Skipping.")
+
+            if event_id not in negative_group:
+                negative_dataset = negative_group.create_dataset(event_id, data=noise_data)
+                negative_dataset = negative_group.create_dataset(event_id+"_stead", data=unprocessed_noise_data)
+            else:
+                print(f"Dataset {event_id} already exists in negative_group. Skipping.")
+
+            count += 1
+
+            for key, value in dataset.attrs.items():
+                positive_group_p[event_id].attrs[key] = value
+
+                negative_group[event_id].attrs[key] = value
+                # Change the wave start time, samppling rate and other changed attributes
+
+            print(f" {str(count)} : {event_id}")
+
+    print ("Number of P records " + str(count))
+    print(f"Number of records P arrival data is not available {non_p_arrival_count}")
+
+
+
 ## Main function to extract data from Geonet database and create 2s  dataset
 def extract_data(cfg=None):
 

@@ -2,7 +2,7 @@ from utils import *
 from config import Config, MODE_TYPE
 from train import train
 from test import test
-from extract_window_db import extract_data, extract_stead_data
+from extract_window_db import extract_data, extract_stead_data, extract_p_data_for_new_data
 from database_op import split_data, split_data_randomly
 
 def main():
@@ -12,7 +12,9 @@ def main():
       print()
 
    elif cfg.MODE == MODE_TYPE.EXTRACT_DATA:
-      extract_data()
+      #extract_data()
+      extract_p_data_for_new_data(cfg)
+      split_data_randomly()
       #extract_stead_data()
 
    elif cfg.MODE == MODE_TYPE.SPLIT_DATA:
