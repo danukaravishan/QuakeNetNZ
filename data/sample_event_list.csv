@@ -1,4 +1,5 @@
 event_id,magnitude,epicentral_distance,sampling_rate
+event_id,magnitude,epicentral_distance,sampling_rate
 2014p051675BFZ,6.2297616,32.82952189,50.0
 2013p613797MGCS,6.468769,28.13915214,200.0
 2018p816466WAZ,6.157347539,80.31143794,200.0

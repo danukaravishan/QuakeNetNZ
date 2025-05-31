@@ -2,6 +2,7 @@ from utils import *
 from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE
 from dataprep import pre_proc_data, normalize_data, apply_wavelet_denoise
+import torch.nn.functional as F
 
 def loadModelConfig(nncfg, checkpoint):
 
@@ -81,15 +82,17 @@ def test(cfg):
    with torch.no_grad():  # Disable gradients during inference
       predictions = model(test_tensor)
 
-   predicted_classes = (predictions > nncfg.detection_threshold)
-   #predicted_classes = torch.argmax(predictions, dim=1)
-
-   #Calculate the accuracy. This is tempory calculation
    true_tensor = torch.tensor(true_vrt, dtype=torch.long).to(device)  # Move to GPU if available
-   predicted_classes = predicted_classes.to(device)  # Move to GPU if available
-   predicted_classes = predicted_classes.squeeze()
-   
-   assert (predicted_classes.shape == true_tensor.shape)
+
+   if cfg.MODEL_TYPE == MODEL_TYPE.TFEQ:
+      output_prob = F.softmax(predictions, dim=1)[:,1]
+      predicted_classes = predictions.max(1, keepdim=True)[1]
+   else:
+      predicted_classes = (predictions > nncfg.detection_threshold)
+      predicted_classes = predicted_classes.to(device)  # Move to GPU if available
+      predicted_classes = predicted_classes.squeeze()
+      
+      assert (predicted_classes.shape == true_tensor.shape)
 
    res = test_report(cfg, nncfg, model, true_tensor, predicted_classes)
    

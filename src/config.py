@@ -20,7 +20,7 @@ class MODEL_TYPE(Enum):
     MobileNet1D = 6
     PDetector   = 7
     TFEQ        = 8
-
+    CNNRNN      = 9
 
 ## This class has all the configurations that control the scripts
 class Config:
@@ -28,11 +28,11 @@ class Config:
         
         #set program mode
         self.MODE               = MODE_TYPE.ALL
-        self.MODEL_TYPE         = MODEL_TYPE.TFEQ
+        self.MODEL_TYPE         = MODEL_TYPE.CNN
         # File paths
-        self.ORIGINAL_DB_FILE   = "/Users/user/Downloads/waveforms.hdf5"
+        #self.ORIGINAL_DB_FILE   = "/Users/user/Downloads/waveforms.hdf5"
         #self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
-        #self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
+        self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
         
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
@@ -45,12 +45,12 @@ class Config:
         self.DATABASE_FILE  = "data/waveform_2s_data.hdf5" # Overide if file alreay exist
         self.ORIGINAL_SAMPLING_RATE = 50 # Most of the data points are in this category. Hence choosing as the base sampling rate
         self.TRAINING_WINDOW        = 2 # in seconds
-        self.BASE_SAMPLING_RATE     = 100
+        self.BASE_SAMPLING_RATE     = 50
         self.SHIFT_WINDOW           = 10
         self.DATA_EXTRACTED_FILE    = f"data/waveform_2s_data.hdf5"
         
-        self.TEST_DATA              = "data/test_data"
-        self.TRAIN_DATA             = "data/train_data"
+        self.TEST_DATA              = "data/test_data_13_24_p_50hz"
+        self.TRAIN_DATA             = "data/train_data_13_24_p_50hz"
 
         # Improve the verbosity
         self.ENABLE_PRINT           = 0

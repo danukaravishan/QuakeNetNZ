@@ -12,6 +12,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from report  import plot_loss
+from models_utils import _train_tfeq
 
 
 def _train(model, dataloader, val_loader, optimizer, criterion, epoch_iter=50):
@@ -195,12 +196,33 @@ def train(cfg):
       model, train_losses, val_loss, val_acc = _train(model, train_loader, val_loader, optimizer, criterion, nncfg.epoch_count)
 
    elif cfg.MODEL_TYPE == MODEL_TYPE.TFEQ:
-      model = TFEQ().to(device)
+      train_loader = DataLoader(
+         TensorDataset(torch.tensor(X_train, dtype=torch.float32),
+                     torch.tensor(Y_train, dtype=torch.int64)),
+      batch_size=nncfg.batch_size,
+      shuffle=True
+      )
+      
+      val_loader = DataLoader(
+         TensorDataset(torch.tensor(X_val, dtype=torch.float32),
+                     torch.tensor(Y_val, dtype=torch.int64)),
+      batch_size=nncfg.batch_size,
+      shuffle=False
+      )
+
+      model = TFEQ(channel=3, time_in=200).to(device)
+      criterion = nn.CrossEntropyLoss()
+      optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate, weight_decay=nncfg.l2_decay)
+      model, train_losses, val_loss, val_acc = _train_tfeq(model, train_loader, val_loader, optimizer, criterion, nncfg.epoch_count)
+   
+   elif cfg.MODEL_TYPE == MODEL_TYPE.CNNRNN:
+      model = CNNRNN().to(device)
       #criterion = nn.CrossEntropyLoss()
       criterion = nn.BCELoss()
       optimizer = torch.optim.Adam(model.parameters(), lr=nncfg.learning_rate, weight_decay=nncfg.l2_decay)
       model, train_losses, val_loss, val_acc = _train(model, train_loader, val_loader, optimizer, criterion, nncfg.epoch_count)
-   
+
+
    elif cfg.MODEL_TYPE == MODEL_TYPE.PhaseNet:
          model = sbm.PhaseNet(phases="PSN", norm="peak")
          #criterion = nn.CrossEntropyLoss()

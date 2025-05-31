@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 ## ML libraries
 from cnn import PWaveCNN
-from models import PDetector, MobileNet1D, TFEQ
+from models import PDetector, MobileNet1D, TFEQ, CNNRNN
 from dnn import DNN
 from dnn import InitWeights
 from cred import CRED

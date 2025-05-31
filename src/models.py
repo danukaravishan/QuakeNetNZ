@@ -191,7 +191,7 @@ class EncoderBlock(nn.Module):
         return x
 
 
-class TFEQ(nn.Module):
+class TFEQMy(nn.Module):
     def __init__(self, input_dim=3, seq_len=200, embed_dim=64, num_heads=8, ff_hidden_dim=128, encoder_layers=1, mlp_output_dim=200):
         super().__init__()
         self.embedding = nn.Linear(input_dim, embed_dim)
@@ -226,6 +226,87 @@ class TFEQ(nn.Module):
         x = x.view(x.size(0), -1)                   # flatten to (batch, 600)
         out = self.mlp(x)                           # MLP with 200 neurons -> 1-class output
         return out           # final output probabilities
+
+
+
+###################### TFEQ copied model #################
+class TFEQ(nn.Module):
+    def __init__(self, channel=3, dmodel=64, nhead=8, dim_feedforward=32, num_layers=1, time_in=200):
+        super(TFEQ, self).__init__()
+        self.input_embedding = nn.Linear(channel, dmodel)
+        self.temporal_encoder_layer = nn.TransformerEncoderLayer(
+            dmodel, nhead, dim_feedforward)
+        self.temporal_encoder = nn.TransformerEncoder(
+            self.temporal_encoder_layer, num_layers)
+        self.decoder = nn.Linear(dmodel, 1)
+        self.temporal_pos = torch.arange(0, time_in).cuda()
+        self.temporal_pe = nn.Embedding(time_in, dmodel)
+        self.fla = nn.Flatten()
+        self.dp = nn.Dropout(p=0.5)
+        self.fc = nn.Linear(time_in, 2)
+        random_tag = str(secrets.randbelow(9000) + 1000)
+        self.model_id = "tfeq_" + datetime.now().strftime("%Y%m%d_%H%M") + "_" + random_tag
+
+    def forward(self, x):
+        x = x.permute(0, 2, 1) # Input datashape of needs to be transposed to (batch, time, channel)
+        b, t,  c = x.shape  # [B, 200, 3]
+        x = self.input_embedding(x)  # [B, 200,  64]
+        t_pe = self.temporal_pe(self.temporal_pos).expand(b, t, -1)
+        x = x + t_pe
+        x = self.temporal_encoder(x)
+        x = self.decoder(x)  # [B, 1, 200, 1]
+#         print(x.shape)
+        x = self.fla(x)
+        x = self.fc(x)
+        return F.log_softmax(x, dim=1)
+    
+
+
+############################################################################################
+### CNNRNN architecture
+class CNNBranch(nn.Module):
+    def __init__(self):
+        super(CNNBranch, self).__init__()
+        self.conv1 = nn.Conv1d(3, 16, kernel_size=5, padding=2)
+        self.conv2 = nn.Conv1d(16, 32, kernel_size=5, padding=2)
+        self.pool = nn.AdaptiveAvgPool1d(1)  # Output: (batch, 32, 1)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))      # (batch, 16, 100)
+        x = F.relu(self.conv2(x))      # (batch, 32, 100)
+        x = self.pool(x)               # (batch, 32, 1)
+        return x.squeeze(-1)           # (batch, 32)
+
+class RNNBranch(nn.Module):
+    def __init__(self, hidden_size=32):
+        super(RNNBranch, self).__init__()
+        self.lstm = nn.LSTM(input_size=3, hidden_size=hidden_size, batch_first=True)
+
+    def forward(self, x):
+        x = x.permute(0, 2, 1)  # (batch, 100, 3)
+        _, (h_n, _) = self.lstm(x)
+        return h_n.squeeze(0)  # (batch, 32)
+
+
+class CNNRNN(nn.Module):
+    def __init__(self):
+        super(CNNRNN, self).__init__()
+        self.cnn_branch = CNNBranch()
+        self.rnn_branch = RNNBranch()
+        self.alpha = nn.Parameter(torch.tensor(0.5))  # learnable fusion weight
+
+        self.fc1 = nn.Linear(32, 16)
+        self.fc2 = nn.Linear(16, 1)
+        random_tag = str(secrets.randbelow(9000) + 1000)
+        self.model_id = "cnnrnn_" + datetime.now().strftime("%Y%m%d_%H%M") + "_" + random_tag
+
+    def forward(self, x):
+        cnn_out = self.cnn_branch(x)  # (batch, 32)
+        rnn_out = self.rnn_branch(x)  # (batch, 32)
+
+        fused = self.alpha * cnn_out + (1 - self.alpha) * rnn_out
+        x = F.relu(self.fc1(fused))
+        return torch.sigmoid(self.fc2(x))  # (batch, 1)
 
 
 

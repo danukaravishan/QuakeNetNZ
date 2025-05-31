@@ -14,9 +14,10 @@ from obspy import UTCDateTime
 from obspy import Stream
 from obspy import Trace
 import shutil  # For deleting the temporary directory
+from config import Config, MODE_TYPE, MODEL_TYPE, NNCFG
+import torch.nn.functional as F
 
-
-def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, nncfg, sampling_rate=50, window_size=100, stride=10):
+def generate_output_for_events(cfg, event_ids, hdf5_file_path, output_dir, model, nncfg, sampling_rate=50, window_size=100, stride=10):
     import os
     os.makedirs(output_dir, exist_ok=True)  # Ensure the output directory exists
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -82,9 +83,14 @@ def generate_output_for_events(event_ids, hdf5_file_path, output_dir, model, nnc
                 input_tensor = torch.tensor(segment, dtype=torch.float32).unsqueeze(0)  # (1, 3, window_size)
                 output = model(input_tensor.to(device))
 
-                cl_out = output > 0.9
+                if cfg.MODEL_TYPE == MODEL_TYPE.TFEQ:
+                    raw_output.append((F.softmax(output, dim=1)[:,1]).item())
+                    cl_out = output.argmax(dim=1)
+                else:
+                    cl_out = output > 0.9
+                    raw_output.append(output.item())
+
                 classified_output.append(cl_out.item())
-                raw_output.append(output.item())
                 time_preds.append(current_time / sampling_rate)
 
             # Convert to NumPy array
@@ -262,7 +268,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
         for row in reader:
             event_ids.append(row[0])  # Assuming the first column contains event IDs
 
-    generate_output_for_events(event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model, nncfg, cfg.BASE_SAMPLING_RATE, cfg.SAMPLE_WINDOW_SIZE)
+    generate_output_for_events(cfg, event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model, nncfg, cfg.BASE_SAMPLING_RATE, cfg.SAMPLE_WINDOW_SIZE)
 
     # Append waveform graphs to the PDF in the correct order
     for event_id in event_ids:
