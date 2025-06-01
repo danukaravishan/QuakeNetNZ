@@ -25,16 +25,16 @@ def extractDataFromHDF5Group(group):
 def getWaveData(cfg, hdf5_file):
 
     positive_group_p = hdf5_file['positive_samples_p']
-    positive_group_s = hdf5_file['positive_samples_s']
+    #positive_group_s = hdf5_file['positive_samples_s']
     negative_group   = hdf5_file['negative_sample_group']
 
     p_data = extractDataFromHDF5Group(positive_group_p)
-    s_data = extractDataFromHDF5Group(positive_group_s)
+    #s_data = extractDataFromHDF5Group(positive_group_s)
     noise_data= extractDataFromHDF5Group(negative_group)
 
     hdf5_file.close()
 
-    return p_data, s_data, noise_data
+    return p_data, noise_data
 
 
 # This function will split the cfg.DATABASE_FILE into two (Train and Test) and create new files

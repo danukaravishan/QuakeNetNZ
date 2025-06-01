@@ -4,7 +4,7 @@ from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE, NNCFG
 import optuna
 from torch.utils.data import random_split, DataLoader, TensorDataset
-from dataprep import pre_proc_data,normalize, normalize_data, apply_wavelet_denoise
+from dataprep import pre_proc_data,normalize, normalize_data, apply_wavelet_denoise, clean_low_pga
 import optuna
 import torch
 import torch.nn as nn
@@ -30,8 +30,8 @@ def _train(model, dataloader, val_loader, optimizer, criterion, epoch_iter=50):
          batch_X, batch_y = batch_X.to(device), batch_y.to(device)
          optimizer.zero_grad()
          output = model(batch_X)
-         #loss = criterion(output.squeeze(), batch_y)
-         loss = criterion(output.view(-1), batch_y)
+         loss = criterion(output.squeeze(), batch_y)
+         #loss = criterion(output.view(-1), batch_y)
          loss.backward()
          optimizer.step()
          epoch_loss+= loss.item()
@@ -81,23 +81,27 @@ def train(cfg):
 
    hdf5_file = h5py.File(cfg.TRAIN_DATA, 'r')
 
-   p_data, s_data, noise_data = getWaveData(cfg, hdf5_file)
+   p_data, noise_data = getWaveData(cfg, hdf5_file)
     
    # Data preparation
    p_data = np.array(p_data)
-   s_data = np.array(s_data)
    noise_data = np.array(noise_data)
 
+   print("Total P wave data in training: ", len(p_data))
+   p_data = clean_low_pga(p_data)
+   print("Total P wave data in training after PGA cleaning: ", len(p_data))
+
+
    p_data = normalize_data(p_data)
-   s_data = normalize_data(s_data)
    noise_data = normalize_data(noise_data)
 
-   ## Merge First 20% of test data into validation set
    hdf5_file_test = h5py.File(cfg.TEST_DATA, 'r')
-   p_data_test, s_data_test, noise_data_test = getWaveData(cfg, hdf5_file_test)
+   p_data_test, noise_data_test = getWaveData(cfg, hdf5_file_test)
 
+   print("Total P wave data in test: ", len(p_data_test))
    p_data_test = np.array(p_data_test)
-   s_data_test = np.array(s_data_test)
+   print("Total P wave data in test after PGA cleaning: ", len(p_data_test))
+
    noise_data_test = np.array(noise_data_test)
 
    test_val_split_ratio = 0.5
@@ -106,18 +110,14 @@ def train(cfg):
    random_indices = random_state.choice(len(p_data_test), int(test_val_split_ratio * p_data_test.shape[0]), replace=False)
    p_data_test = p_data_test[random_indices]
 
-   random_indices = random_state.choice(len(s_data_test), int(test_val_split_ratio * s_data_test.shape[0]), replace=False)
-   s_data_test = s_data_test[random_indices]
-
    random_indices = random_state.choice(len(noise_data_test), int(test_val_split_ratio * noise_data_test.shape[0]), replace=False)
    noise_data_test = noise_data_test[random_indices]
 
    p_data_test = normalize_data(p_data_test)
-   s_data_test = normalize_data(s_data_test)
    noise_data_test = normalize_data(noise_data_test)
    
    ### 
-   positive_data = np.concatenate((p_data , s_data))
+   positive_data = p_data
    X = np.concatenate([positive_data, noise_data], axis=0)
    Y = np.array([1] * len(positive_data) + [0] * len(noise_data))  # 1 for P wave, 0 for noise
 
@@ -135,8 +135,8 @@ def train(cfg):
    X_val = X[train_size:]
    Y_val = Y[train_size:]
 
-   X_test_val = np.concatenate([p_data_test, s_data_test, noise_data_test])
-   Y_test_val = np.array([1] * (len(p_data_test) + len(s_data_test)) + [0] * len(noise_data_test))
+   X_test_val = np.concatenate([p_data_test, noise_data_test])
+   Y_test_val = np.array([1] * (len(p_data_test)) + [0] * len(noise_data_test))
 
    X_val = np.concatenate([X_val, X_test_val])
    Y_val = np.concatenate([Y_val, Y_test_val])
