@@ -49,7 +49,13 @@ def highpass_filter(signal, cutoff=0.5, fs=100.0, order=4):
 
 def normalize(signal):
     """Normalize the signal between -1 and 1."""
-    return (signal - np.min(signal)) / (np.max(signal) - np.min(signal)) * 2 - 1
+    min_val = np.min(signal)
+    max_val = np.max(signal)
+    if max_val - min_val == 0:
+        return np.zeros_like(signal)  # or signal, or any constant value you prefer
+    return (signal - min_val) / (max_val - min_val) * 2 - 1
+    # """Normalize the signal between -1 and 1."""
+    # return (signal - np.min(signal)) / (np.max(signal) - np.min(signal)) * 2 - 1
 
 # normalise 2
 def zscore_normalize(signal):
@@ -69,6 +75,12 @@ def robust_scale(signal):
 def energy_normalize(signal):
     energy = np.sqrt(np.sum(signal**2))
     return signal / energy if energy != 0 else signal
+
+
+def calculate_pga(data):
+    norms = np.linalg.norm(data, axis=0)
+    pga = np.max(norms)    
+    return pga
 
 
 def wavelet_denoise(x_np, wavelet_name, wavelet_level):
@@ -94,6 +106,35 @@ def normalize_data(data):
     else:
         raise ValueError("Input data must have 2 or 3 dimensions.")
 
+
+def augment_waveform(waveform, amp_factor=2, noise_std=0.0001):
+    augmented = waveform.copy()
+    channels = [0, 1, 2]
+    # Randomly pick two different channels
+    ch_up, ch_down = np.random.choice(channels, 2, replace=False)
+    # Random factors
+    up_factor = 1 + np.random.uniform(0, amp_factor)
+    down_factor = 1 - np.random.uniform(0, amp_factor)
+    augmented[ch_up, :] *= up_factor
+    augmented[ch_down, :] *= down_factor
+    return augmented
+
+
+def clean_low_pga(data, threshold=0.001):
+    if data.ndim == 3:  # Case for a set of data
+        processed_data = []
+        for sig in data:
+            pga = float(calculate_pga(sig))*1000
+            if pga < threshold:  # Threshold for PGA
+                continue
+            sigp = augment_waveform(sig)
+            processed_data.append(sigp)
+        return np.array(processed_data)
+    elif data.ndim == 2:  # Case for a single input
+        return data if calculate_pga(data) < threshold else [] 
+    else:
+        raise ValueError("Input data must have 2 or 3 dimensions.")
+    
 
 def apply_wavelet_denoise(waveforms, wavelet_name, wavelet_level):
 
