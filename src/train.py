@@ -81,7 +81,7 @@ def train(cfg):
 
    hdf5_file = h5py.File(cfg.TRAIN_DATA, 'r')
 
-   p_data, noise_data = getWaveData(cfg, hdf5_file)
+   p_data, noise_data, _ = getWaveData(cfg, hdf5_file)
     
    # Data preparation
    p_data = np.array(p_data)
@@ -96,7 +96,7 @@ def train(cfg):
    noise_data = normalize_data(noise_data)
 
    hdf5_file_test = h5py.File(cfg.TEST_DATA, 'r')
-   p_data_test, noise_data_test = getWaveData(cfg, hdf5_file_test)
+   p_data_test, noise_data_test, _ = getWaveData(cfg, hdf5_file_test)
 
    print("Total P wave data in test: ", len(p_data_test))
    p_data_test = np.array(p_data_test)

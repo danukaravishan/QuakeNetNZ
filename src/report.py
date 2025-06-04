@@ -16,6 +16,7 @@ from obspy import Trace
 import shutil  # For deleting the temporary directory
 from config import Config, MODE_TYPE, MODEL_TYPE, NNCFG
 import torch.nn.functional as F
+from plots import plot_accuracy_vs_metadata
 
 def generate_output_for_events(cfg, event_ids, hdf5_file_path, output_dir, model, nncfg, sampling_rate=50, window_size=100, stride=10):
     import os
@@ -196,7 +197,7 @@ def addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters):
 
 
 # Function to dump all model details into a seperate pdf file
-def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
+def test_report(cfg, nncfg, model, true_tensor, predicted_classes, p_metadata, p_data_orig):
     
     TP = ((predicted_classes == 1) & (true_tensor == 1)).sum().item()  # True Positives
     TN = ((predicted_classes == 0) & (true_tensor == 0)).sum().item()  # True Negatives
@@ -267,6 +268,20 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes):
         reader = csv.reader(csvfile)
         for row in reader:
             event_ids.append(row[0])  # Assuming the first column contains event IDs
+
+    acc_vs_metadata_img = cfg.MODEL_PATH + nncfg.model_id + "_acc_metadata.jpg"
+    
+    plot_accuracy_vs_metadata(true_tensor, predicted_classes, p_metadata, acc_vs_metadata_img, p_data_orig)
+
+    if os.path.exists(acc_vs_metadata_img):
+        pdf.add_page()
+        pdf.image(acc_vs_metadata_img, x=10, y=10, w=180)
+        heatmap_img = acc_vs_metadata_img.replace("acc_metadata", "bivariate_heatmap")
+        if os.path.exists(heatmap_img):
+            # Place the heatmap image below the acc_vs_metadata image on the same page
+            pdf.image(heatmap_img, x=10, y=110, w=180)
+            os.remove(heatmap_img)
+        os.remove(acc_vs_metadata_img)  # Remove the image file after adding to the PDF
 
     generate_output_for_events(cfg, event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model, nncfg, cfg.BASE_SAMPLING_RATE, cfg.SAMPLE_WINDOW_SIZE)
 

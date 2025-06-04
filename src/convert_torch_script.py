@@ -35,19 +35,17 @@ model.eval()
 
 
 hdf5_file = h5py.File(cfg.TEST_DATA, 'r')
-p_data, s_data, noise_data = getWaveData(cfg, hdf5_file)
+p_data, noise_data, _ = getWaveData(cfg, hdf5_file)
 
 p_data      = np.array(p_data)
-s_data      = np.array(s_data)
 noise_data  = np.array(noise_data)
 
 p_data = pre_proc_data(p_data)
-s_data = pre_proc_data(s_data)
 noise_data = pre_proc_data(noise_data)
 
-true_vrt    = np.array([1] * len(p_data) + [1] * len(s_data) +[0] * len(noise_data))
+true_vrt    = np.array([1] * len(p_data) +[0] * len(noise_data))
 
-test_vtr    = np.concatenate((p_data, s_data, noise_data))
+test_vtr    = np.concatenate((p_data, noise_data))
 
 # Convert to tensor
 test_tensor = torch.tensor(test_vtr, dtype=torch.float32)

@@ -39,10 +39,12 @@ def test(cfg):
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
    hdf5_file = h5py.File(cfg.TEST_DATA, 'r')
-   p_data, noise_data = getWaveData(cfg, hdf5_file)
+   p_data, noise_data, p_metadata = getWaveData(cfg, hdf5_file)
 
    p_data      = np.array(p_data)
    noise_data  = np.array(noise_data)
+
+   p_data_orig = p_data
 
    p_data      = normalize_data(p_data)
    noise_data  = normalize_data(noise_data)
@@ -55,6 +57,10 @@ def test(cfg):
    random_indices_p = random_state.choice(len(p_data), int(test_val_split_ratio * p_data.shape[0]), replace=False)
    test_indices_p = np.setdiff1d(all_indices_p, random_indices_p)  # Indices not used in validation
    p_data_test = p_data[test_indices_p]
+
+   # Data for magnitude plot
+   p_metadata_test = [p_metadata[i] for i in test_indices_p]
+   p_data_orig     = p_data_orig[test_indices_p]
 
    # Get indices for noise data
    all_indices_noise = np.arange(len(noise_data))
@@ -84,7 +90,7 @@ def test(cfg):
       
       assert (predicted_classes.shape == true_tensor.shape)
 
-   res = test_report(cfg, nncfg, model, true_tensor, predicted_classes)
+   res = test_report(cfg, nncfg, model, true_tensor, predicted_classes, p_metadata_test, p_data_orig)
    
    if res == 0:
       print("Testing completed successfully")
