@@ -1,4 +1,3 @@
-
 from utils import *
 from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE, NNCFG
@@ -13,6 +12,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from report  import plot_loss
 from models_utils import _train_tfeq
+from ptflops import get_model_complexity_info
 
 
 def _train(model, dataloader, val_loader, optimizer, criterion, epoch_iter=50):
@@ -88,7 +88,7 @@ def train(cfg):
    noise_data = np.array(noise_data)
 
    print("Total P wave data in training: ", len(p_data))
-   p_data = clean_low_pga(p_data)
+   #p_data = clean_low_pga(p_data)
    print("Total P wave data in training after PGA cleaning: ", len(p_data))
 
 
@@ -240,6 +240,13 @@ def train(cfg):
         model, train_losses = _train(model, train_loader, optimizer, criterion, nncfg.epoch_count)
    
    cfg.MODEL_FILE_NAME = cfg.MODEL_PATH + model.model_id
+
+   # Saving macs and parameters of the model
+   macs, params = get_model_complexity_info(model, (3, cfg.SAMPLE_WINDOW_SIZE), as_strings=True)
+   # Save MACs value to a file named after the model
+   macs_file = cfg.MODEL_FILE_NAME + "_macs.txt"
+   with open(macs_file, "w") as f:
+       f.write(str(macs))
 
    sample = torch.tensor(X_train[0], dtype=torch.float32).unsqueeze(0)
    sample = sample.to(device)

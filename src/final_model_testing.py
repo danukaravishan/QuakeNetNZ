@@ -4,6 +4,8 @@ from config import Config, MODE_TYPE, MODEL_TYPE
 from dataprep import pre_proc_data
 from plots import plot_accuracy_vs_metadata
 
+from ptflops import get_model_complexity_info
+
 # This script can be used to test and plot different aspects of the final model 
 def final_test(): 
    
@@ -88,6 +90,7 @@ def final_test():
    recall = 100 * (TP / (TP + FN)) if (TP + FN) != 0 else 0
    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
    parameters = count_parameters(model)
+   macs, params = get_model_complexity_info(model, (3, cfg.SAMPLE_WINDOW_SIZE), as_strings=True)
 
    # Print the results
    print(f'Accuracy: {accuracy:.4f}%')

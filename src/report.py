@@ -181,7 +181,7 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 #Function to append model data to csv file
-def addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters):
+def addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters, flops):
 
     file_exists = os.path.isfile(cfg.CSV_FILE)
 
@@ -189,12 +189,42 @@ def addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters):
         writer = csv.writer(file)
 
         if not file_exists:
-            writer.writerow(['Model ID', 'Accuracy', 'Precision', 'Recall', 'F1 Score', 'Model Parameters', 'Learning Rate', 'Batch size', 'Epoch', 'Optimizer'])
+            writer.writerow(['Model ID', 'Accuracy', 'Precision', 'Recall', 'F1 Score', 'Model Parameters', 'Learning Rate', 'Batch size', 'Epoch', 'Optimizer', 'conv1', 'conv2' , 'conv3' , 'f1', 'f2', 'k1', 'k2', 'k3', 'FLOPs'])
 
         #val_acc_index = nncfg.val_acc.index(max(nncfg.val_acc))
-        writer.writerow([nncfg.model_id, f"{accuracy:.4f}%", f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", parameters, nncfg.learning_rate, nncfg.batch_size, nncfg.epoch_count, nncfg.optimizer, nncfg.conv1_size, nncfg.conv2_size, nncfg.conv3_size, nncfg.fc1_size, nncfg.fc2_size, nncfg.kernal_size1, nncfg.kernal_size2, nncfg.kernal_size3, nncfg.wavelet_name, nncfg.wavelet_level])
+        writer.writerow([nncfg.model_id, f"{accuracy:.4f}%", f"{precision:.4f}%", f"{recall:.4f}%", f"{f1:.4f}%", parameters, nncfg.learning_rate, nncfg.batch_size, nncfg.epoch_count, nncfg.optimizer, nncfg.conv1_size, nncfg.conv2_size, nncfg.conv3_size, nncfg.fc1_size, nncfg.fc2_size, nncfg.kernal_size1, nncfg.kernal_size2, nncfg.kernal_size3, flops])
     print(f"Model details for {nncfg.model_id} appended to {cfg.CSV_FILE} CSV.")
 
+
+def  count_flops(cfg, nncfg):
+    macs_file = cfg.MODEL_PATH + nncfg.model_id + "_macs.txt"
+    macs = None
+    if os.path.exists(macs_file):
+        with open(macs_file, "r") as f:
+            macs = f.read().strip()
+            os.remove(macs_file)
+            # Try to extract numeric value and unit, then convert to integer FLOPs
+            import re
+            match = re.match(r"([\d.,]+)\s*([a-zA-Z]*)", macs)
+            if match:
+                value, unit = match.groups()
+                value = float(value.replace(',', ''))
+                unit = unit.lower()
+                multiplier = 1
+                if unit in ["k", "kmac", "kflop", "kflops"]:
+                    multiplier = 1e3
+                elif unit in ["m", "mmac", "mflop", "mflops"]:
+                    multiplier = 1e6
+                elif unit in ["g", "gmac", "gflop", "gflops"]:
+                    multiplier = 1e9
+                elif unit in ["t", "tmac", "tflop", "tflops"]:
+                    multiplier = 1e12
+                return int(value * multiplier)
+            try:
+                return int(macs.replace(',', ''))
+            except ValueError:
+                return macs
+    return 0
 
 # Function to dump all model details into a seperate pdf file
 def test_report(cfg, nncfg, model, true_tensor, predicted_classes, p_metadata, p_data_orig):
@@ -210,6 +240,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes, p_metadata, p
     recall = 100 * (TP / (TP + FN)) if (TP + FN) != 0 else 0
     f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
     parameters = count_parameters(model)
+    flops = count_flops(cfg, nncfg)
 
     # Print the results
     print(f'Accuracy: {accuracy:.4f}%')
@@ -217,6 +248,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes, p_metadata, p
     print(f'Recall: {recall:.4f}%')
     print(f'F1 Score: {f1:.4f}%')
     print(f'Parameters: {parameters}')
+    print(f'FLOPs: {flops}')
 
     pdf = FPDF()
     pdf.add_page()
@@ -245,6 +277,7 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes, p_metadata, p
     pdf.cell(200, 10, txt=f"Recall: {recall:.4f}%", ln=True, align='L')
     pdf.cell(200, 10, txt=f"F1 Score: {f1:.4f}%", ln=True, align='L')
     pdf.cell(200, 10, txt=f"Parameters: {parameters}", ln=True, align='L')
+    pdf.cell(200, 10, txt=f"FLOPs: {flops}", ln=True, align='L')
     #pdf.cell(200, 10, txt=f"Max val acc: {max(nncfg.val_acc):.4f}", ln=True, align='L')
     #pdf.cell(200, 10, txt=f"Max val acc index: {nncfg.val_acc.index(max(nncfg.val_acc))}", ln=True, align='L')
 
@@ -303,4 +336,4 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes, p_metadata, p
     print(f"Deleted temporary directory: {temp_dir}")
 
     # Append model details to CSV
-    addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters)
+    addToCSV(cfg, nncfg, model, accuracy, precision, recall, f1, parameters, flops)
