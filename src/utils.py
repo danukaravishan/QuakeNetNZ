@@ -67,18 +67,20 @@ def plot_waveform_with_picks(event_id, hdf5_file):
     """
 
     with h5py.File(hdf5_file, 'r') as hdf:
-        dataset = hdf[event_id]
-    
+        dataset = hdf["data"].get(event_id)
+
         data = np.array(dataset)
         sampling_rate = dataset.attrs.get("sampling_rate", None)
         data_pre_proc = pre_proc_data(data, sampling_rate=sampling_rate)
 
+        # Extract channels from attributes and split them
+        channels_attr = dataset.attrs.get("channels", "")
+        channels = channels_attr.split(",") if channels_attr else [f"Channel {i+1}" for i in range(len(data))]
+
         # Get P and S wave pick times from attributes
         p_pick_time = dataset.attrs.get("p_arrival_sample", None)
-        s_pick_time = dataset.attrs.get("s_arrival_sample", None)
         # Convert pick times to indices if they exist
-        p_arrival_index = int(p_pick_time) if not np.isnan(p_pick_time) else None
-        s_arrival_index = int(s_pick_time) if not np.isnan(s_pick_time) else None
+        p_arrival_index = int(p_pick_time) if p_pick_time is not None and not np.isnan(p_pick_time) else None
 
         epicentral_distance = dataset.attrs.get("epicentral_distance", None)
         magnitude = dataset.attrs.get("magnitude", None)
@@ -88,7 +90,7 @@ def plot_waveform_with_picks(event_id, hdf5_file):
         # Plot each channel in the dataset
         plt.subplot(2, 1, 1)
         for i, channel in enumerate(data):
-            plt.plot(channel, label=f"Channel {i+1}")
+            plt.plot(channel, label=channels[i] if i < len(channels) else f"Channel {i+1}")
 
         # Mark the P-wave arrival if available
         if p_arrival_index is not None:
@@ -97,34 +99,60 @@ def plot_waveform_with_picks(event_id, hdf5_file):
                 plt.axvline(x=p_arrival_index - sampling_rate * 1, color='r', linestyle=':', label='P-wave Window Start')
                 plt.axvline(x=p_arrival_index + sampling_rate * 1, color='r', linestyle=':', label='P-wave Window End')
 
-        # Mark the S-wave arrival if available
-        if s_arrival_index is not None:
-            plt.axvline(x=s_arrival_index, color='b', linestyle='--', label='S-wave Pick')
-
-        plt.title(f"Waveform with P and S Wave Picks, Event {event_id} , Magnitude {magnitude}, Epicentral Distance {epicentral_distance}")
+        plt.title(f"Waveform with P Wave Pick, Event {event_id}, Magnitude {magnitude}, Epicentral Distance {epicentral_distance}Km")
         plt.xlabel("Sample Index")
-        plt.ylabel("Amplitude")
+        plt.ylabel("Acceleration (m/s²)")
         plt.legend()
         plt.grid()
 
         plt.subplot(2, 1, 2)
         for i, channel in enumerate(data_pre_proc):
-            plt.plot(channel, label=f"Channel {i+1}")
+            # Trim the first and last 20 samples
+            trimmed_channel = channel[30:-20]
+            plt.plot(trimmed_channel, label=channels[i] if i < len(channels) else f"Channel {i+1}")
         if p_arrival_index is not None:
-            plt.axvline(x=p_arrival_index, color='r', linestyle='--', label='P-wave Pick')
+            plt.axvline(x=p_arrival_index - 20, color='r', linestyle='--', label='P-wave Pick')
             if sampling_rate is not None:
-                plt.axvline(x=p_arrival_index - sampling_rate * 1, color='r', linestyle=':', label='P-wave Window Start')
-                plt.axvline(x=p_arrival_index + sampling_rate * 1, color='r', linestyle=':', label='P-wave Window End')
-        if s_arrival_index is not None:
-            plt.axvline(x=s_arrival_index, color='b', linestyle='--', label='S-wave Pick')
-        plt.title(f"Pre-processed Waveform with P and S Wave Picks, Event {event_id}")
+                plt.axvline(x=p_arrival_index - sampling_rate * 1 - 20, color='r', linestyle=':', label='P-wave Window Start')
+                plt.axvline(x=p_arrival_index + sampling_rate * 1 - 20, color='r', linestyle=':', label='P-wave Window End')
+
+        plt.title(f"Pre-processed Waveform with P Wave Pick, Event {event_id}")
         plt.xlabel("Sample Index")
-        plt.ylabel("Amplitude")
+        plt.ylabel("Acceleration (m/s²)")
         plt.legend()
         plt.grid()
 
         plt.tight_layout()
         plt.show()
+
+
+
+
+def plot_2s_waveform(event_id, hdf5_file):
+    """
+    Plots the 3 components of the waveform data for the given event ID.
+
+    Args:
+        event_id (str): The ID of the event to plot.
+        hdf5_file (str): Path to the HDF5 file containing the waveform data.
+    """
+    with h5py.File(hdf5_file, 'r') as hdf:
+        dataset = hdf["positive_samples_p"].get(event_id)
+        data = np.array(dataset)
+
+        plt.figure(figsize=(4, 6))  # Adjusted figure size for better visualization
+        for i in range(3):  # Assuming 3 components
+            plt.subplot(3, 1, i + 1)
+            plt.plot(data[i], label=f"Component {i + 1}")
+            plt.title(f"Component {i + 1} - Event {event_id}")
+            plt.xlabel("Sample Index")
+            plt.ylabel("Amplitude")
+            plt.legend()
+            plt.grid()
+
+        plt.tight_layout()
+        plt.show()
+
 
 def count_records_in_hdf5_groups(hdf5_file_path):
     """
