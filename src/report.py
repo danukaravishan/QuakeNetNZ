@@ -316,15 +316,16 @@ def test_report(cfg, nncfg, model, true_tensor, predicted_classes, p_metadata, p
             os.remove(heatmap_img)
         os.remove(acc_vs_metadata_img)  # Remove the image file after adding to the PDF
 
-    generate_output_for_events(cfg, event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model, nncfg, cfg.BASE_SAMPLING_RATE, cfg.SAMPLE_WINDOW_SIZE)
+    if  nncfg.plot_real_time_waveforms:
+        print("Generating waveform graphs for events...")
+        generate_output_for_events(cfg, event_ids, cfg.ORIGINAL_DB_FILE, temp_dir, model, nncfg, cfg.BASE_SAMPLING_RATE, cfg.SAMPLE_WINDOW_SIZE)
 
-    # Append waveform graphs to the PDF in the correct order
-    for event_id in event_ids:
-        image_file = f"{event_id}.png"
-        image_path = os.path.join(temp_dir, image_file)
-        if os.path.exists(image_path):
-            pdf.add_page()
-            pdf.image(image_path, x=10, y=10, w=180)
+        for event_id in event_ids:
+            image_file = f"{event_id}.png"
+            image_path = os.path.join(temp_dir, image_file)
+            if os.path.exists(image_path):
+                pdf.add_page()
+                pdf.image(image_path, x=10, y=10, w=180)
 
     # Save the PDF
     pdf_filename = cfg.MODEL_PATH + nncfg.model_id + ".pdf"

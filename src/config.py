@@ -27,12 +27,12 @@ class Config:
     def __init__(self):
         
         #set program mode
-        self.MODE               = MODE_TYPE.EXTRACT_DATA
+        self.MODE               = MODE_TYPE.ALL
         self.MODEL_TYPE         = MODEL_TYPE.CNN
         # File paths
-        self.ORIGINAL_DB_FILE   = "data/waveforms_13_24.hdf5"
+        #self.ORIGINAL_DB_FILE   = "data/waveforms_13_24.hdf5"
         #self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
-        #self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
+        self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
         
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
@@ -122,6 +122,9 @@ class NNCFG:
         self.wavelet_name          = "db4"
         self.wavelet_level         = 1
 
+        self.plot_real_time_waveforms = False
+
+
 
     def argParser(self):
         parser = argparse.ArgumentParser()
@@ -157,6 +160,8 @@ class NNCFG:
         parser.add_argument('--wavelet_name', type=str, help='Name of the wavelet to use for wavelet denoising')
         parser.add_argument('--wavelet_level', type=int, help='Level of the wavelet decomposition')
 
+        parser.add_argument('--plot_real_time_waveforms', type=bool, help='Plot real time waveforms during training')
+
         args = parser.parse_args()
 
         self.learning_rate   = args.learning_rate   if args.learning_rate is not None else self.learning_rate
@@ -189,5 +194,7 @@ class NNCFG:
 
         self.wavelet_name   = str(args.wavelet_name) if args.wavelet_name is not None else self.wavelet_name
         self.wavelet_level  = int(args.wavelet_level) if args.wavelet_level is not None else self.wavelet_level
+
+        self.plot_real_time_waveforms = bool(args.plot_real_time_waveforms) if args.plot_real_time_waveforms is not None else self.plot_real_time_waveforms
 
         print(f"Training Hyperparameter : Learning Rate = {self.learning_rate}, Epoch count = {self.epoch_count}, Batch Size = {self.batch_size}, conv1 = {self.conv1_size}, conv2 = {self.conv2_size}, conv3 = {self.conv3_size}, fc1 {self.fc1_size}, fc2 {self.fc2_size} , CNN filter1 = {self.kernal_size1}, CNN filter2= {self.kernal_size2}, CNN filter3= {self.kernal_size3}") # Add others upon on the requirement

@@ -45,12 +45,13 @@ def plot_accuracy_vs_metadata(true_tensor, predicted_classes, metadata, acc_vs_m
 
     # Print information about incorrect samples (after removing incorrect_sample_list)
     incorrect_mask = preds != 1
-    if np.any(incorrect_mask):
-        print("Incorrect samples (event_info):")
-        for info in event_info[incorrect_mask]:
-            print(info)
-    else:
-        print("No incorrect samples found.")
+    # if np.any(incorrect_mask):
+    #     print("Incorrect samples (event_info):")
+    #     for info in event_info[incorrect_mask]:
+    #         print(info)
+    # else:
+    #     print("No incorrect samples found.")
+
 
     # Bin by magnitude
     mag_bins = np.linspace(mags.min(), mags.max(), bins+1)
