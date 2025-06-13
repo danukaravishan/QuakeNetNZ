@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc, precision_recall_curve
+
 
 def plot_accuracy_vs_metadata(true_tensor, predicted_classes, metadata, acc_vs_metadata_img, p_data, bins=10):
     
@@ -126,3 +128,71 @@ def plot_accuracy_vs_metadata(true_tensor, predicted_classes, metadata, acc_vs_m
     plt.colorbar(label='Classification Accuracy')
     plt.tight_layout()
     plt.savefig(heatmap_img)
+
+
+## Plot the ROC curves
+def plot_roc_curve(true_tensor, predicted_probs, roc_img_path, model_name=None):
+    """
+    Plots the ROC curve for a binary classifier and also plots precision, recall, and F1 score vs threshold in the same image.
+    Args:
+        true_tensor: torch.Tensor or np.ndarray of true binary labels (0 or 1)
+        predicted_probs: torch.Tensor or np.ndarray of predicted probabilities (floats in [0,1])
+        roc_img_path: Path to save the ROC curve image
+        model_name: Optional string for plot title
+    """
+    # Convert to numpy arrays if needed
+    if hasattr(true_tensor, 'cpu'):
+        y_true = true_tensor.cpu().numpy().flatten()
+    else:
+        y_true = np.array(true_tensor).flatten()
+    if hasattr(predicted_probs, 'cpu'):
+        y_score = predicted_probs.cpu().numpy().flatten()
+    else:
+        y_score = np.array(predicted_probs).flatten()
+
+    # Compute ROC curve and ROC area
+    fpr, tpr, thresholds_roc = roc_curve(y_true, y_score)
+    roc_auc = auc(fpr, tpr)
+
+    # Compute precision, recall, F1 vs threshold
+    precision, recall, thresholds_pr = precision_recall_curve(y_true, y_score)
+    thresholds_pr = np.append(thresholds_pr, 1.0)  # To match array lengths for plotting
+    f1 = 2 * (precision * recall) / (precision + recall + 1e-8)
+
+    # Plot both ROC and PR/F1 in the same figure (side by side)
+    fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+
+    # ROC curve
+    axs[0].plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.3f})')
+    axs[0].plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--', label='Chance')
+    axs[0].set_xlim([0.0, 1.0])
+    axs[0].set_ylim([0.0, 1.05])
+    axs[0].set_xlabel('False Positive Rate', fontsize=12)
+    axs[0].set_ylabel('True Positive Rate (Recall)', fontsize=12)
+    title = 'Receiver Operating Characteristic (ROC)'
+    if model_name:
+        title += f' - {model_name}'
+    axs[0].set_title(title, fontsize=14)
+    axs[0].legend(loc='lower right')
+    axs[0].grid(True)
+
+    # Precision, Recall, F1 vs Threshold
+    axs[1].plot(thresholds_pr, precision, label='Precision', color='blue')
+    axs[1].plot(thresholds_pr, recall, label='Recall', color='green')
+    axs[1].plot(thresholds_pr, f1, label='F1 Score', color='red')
+    axs[1].set_xlabel('Threshold', fontsize=12)
+    axs[1].set_ylabel('Score', fontsize=12)
+    prf1_title = 'Precision, Recall, and F1 Score vs. Threshold'
+    if model_name:
+        prf1_title += f' - {model_name}'
+    axs[1].set_title(prf1_title, fontsize=14)
+    axs[1].legend(loc='best')
+    axs[1].grid(True)
+
+    plt.tight_layout()
+    plt.savefig(roc_img_path)
+    plt.close()
+
+    return fpr, tpr, thresholds_roc, roc_auc, thresholds_pr, precision, recall, f1
+
+

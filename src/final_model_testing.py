@@ -2,9 +2,25 @@ from utils import *
 from database_op import *
 from config import Config, MODE_TYPE, MODEL_TYPE
 from dataprep import pre_proc_data
-from plots import plot_accuracy_vs_metadata
+from plots import plot_accuracy_vs_metadata, plot_roc_curve
 
 from ptflops import get_model_complexity_info
+
+
+def filter_by_year(metadata, data, max_year=2019):
+      filtered_data = []
+      filtered_metadata = []
+      for i, meta in enumerate(metadata):
+         event_id = str(meta[0])
+         try:
+            year = int(event_id[:4])
+         except Exception:
+            continue
+         if year >= max_year:
+            filtered_data.append(data[i])
+            filtered_metadata.append(meta)
+      return np.array(filtered_data), filtered_metadata
+
 
 # This script can be used to test and plot different aspects of the final model 
 def final_test(): 
@@ -13,7 +29,7 @@ def final_test():
    nncfg = NNCFG()
    nncfg.argParser()
 
-   model_file_name = "models/cnn_20250531_2259_6313.pt"
+   model_file_name = "models/cnn_20250613_1327_1922.pt"
    cfg.MODEL_FILE_NAME = model_file_name
 
    nncfg.model_id =  os.path.splitext(os.path.basename(cfg.MODEL_FILE_NAME))[0]
@@ -37,8 +53,18 @@ def final_test():
    p_data      = normalize_data(p_data)
    noise_data  = normalize_data(noise_data)
 
-   test_val_split_ratio = 0.5
+   # Filter out data after the year 2019 for both p and noise data
+   #p_data, p_metadata = filter_by_year(p_metadata, p_data, max_year=2019)
 
+   # Balance: get same number of noise samples as filtered p_data
+   n_p = len(p_data)
+   if len(noise_data) > n_p:
+       random_state = np.random.RandomState(42)  # For reproducibility
+       noise_indices = random_state.choice(len(noise_data), n_p, replace=False)
+       noise_data = noise_data[noise_indices]
+
+
+   test_val_split_ratio = 0.5
    random_state = np.random.RandomState(42)  # Set a fixed random seed for consistency
 
    all_indices_p = np.arange(len(p_data))
@@ -90,7 +116,7 @@ def final_test():
    recall = 100 * (TP / (TP + FN)) if (TP + FN) != 0 else 0
    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
    parameters = count_parameters(model)
-   macs, params = get_model_complexity_info(model, (3, cfg.SAMPLE_WINDOW_SIZE), as_strings=True)
+   #macs, params = get_model_complexity_info(model, (3, cfg.SAMPLE_WINDOW_SIZE), as_strings=True)
 
    # Print the results
    print(f'Accuracy: {accuracy:.4f}%')
@@ -99,10 +125,12 @@ def final_test():
    print(f'F1 Score: {f1:.4f}%')
    print(f'Parameters: {parameters}')
    
-   acc_vs_metadata_img = cfg.MODEL_PATH + nncfg.model_id + "_acc_metadata.jpg"
-   plot_accuracy_vs_metadata(true_tensor, predicted_classes, p_metadata, acc_vs_metadata_img, p_data_orig)
+   #acc_vs_metadata_img = cfg.MODEL_PATH + nncfg.model_id + "_acc_metadata.jpg"
+   #plot_accuracy_vs_metadata(true_tensor, predicted_classes, p_metadata, acc_vs_metadata_img, p_data_orig)
 
-   print(f"Plot saved to: {acc_vs_metadata_img}")
+   plot_roc_curve(true_tensor, predictions, "plots/" + nncfg.model_id + "_roc_curve.jpg")
+
+   #print(f"Plot saved to: {acc_vs_metadata_img}")
    print("Final test completed successfully.")
    
 

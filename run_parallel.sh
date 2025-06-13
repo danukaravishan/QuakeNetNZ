@@ -50,4 +50,11 @@
 # python src/main.py --learning_rate=0.002 --epoch_count=100 --batch_size=100 --conv1_size=32 --conv2_size=24 --conv3_size=16 --fc1_size=22 --fc2_size=11 --l2_decay=0.0008 --dropout1=0.3 --dropout2=0.2 --kernal_size1=4 --kernal_size2=4 --kernal_size3=4
 # python src/main.py --learning_rate=0.002 --epoch_count=100 --batch_size=100 --conv1_size=32 --conv2_size=32 --conv3_size=32 --fc1_size=44 --fc2_size=18 --l2_decay=0.0008 --dropout1=0.3 --dropout2=0.2 --kernal_size1=4 --kernal_size2=4 --kernal_size3=4
 
-parallel --memfree 8G  -j 6 python src/main.py --learning_rate=0.002 --epoch_count=20 --batch_size=1024 --conv1_size={1} --conv2_size={2} --conv3_size={3} --fc1_size=22 --fc2_size=11 --l2_decay=0.0008 --dropout1=0.3 --dropout2=0.2 --kernal_size1=4 --kernal_size2=4 --kernal_size3=4  ::: 44 36 32 30 28 24 16 8 :: 34 32 28 24 20 16 8 4 ::: 34 32 28 24 16 12 8 4
+
+## First variations
+## ::: 44 36 32 30 28 24 16 8 ::: 34 32 28 24 20 16 8 4 ::: 34 32 28 24 16 12 8 4
+
+## Second Variations
+## ::: 6 4 2 ::: 6 4 2 ::: 6 4 2
+
+parallel --memfree 8G  -j 8 python src/main.py --learning_rate=0.002 --epoch_count=50 --batch_size=1024 --conv1_size={1} --conv2_size={2} --conv3_size={3} --fc1_size=22 --fc2_size=11 --l2_decay=0.0008 --dropout1=0.3 --dropout2=0.2 --kernal_size1=4 --kernal_size2=4 --kernal_size3=4 ::: 44 36 32 30 28 24 16 8 ::: 34 32 28 24 20 16 8 4 ::: 34 32 28 24 16 12 8 4 2
