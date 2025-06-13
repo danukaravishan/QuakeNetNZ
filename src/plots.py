@@ -7,6 +7,8 @@ from shapely.geometry import Point
 import contextily as ctx
 import h5py
 import requests
+from obspy import read
+import os
 
 
 def plot_accuracy_vs_metadata(true_tensor, predicted_classes, metadata, acc_vs_metadata_img, p_data, bins=10):
