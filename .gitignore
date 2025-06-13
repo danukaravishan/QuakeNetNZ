@@ -7,7 +7,10 @@ data/EdgeImpulseCSV/*
 data/*train_data*
 data/*test_data*
 
-models/*
+models/*.pt
+models/*.pdf
+models/old
+
 run.sh
 data/model_details_backup.csv
 data/eqtest_models.csv
