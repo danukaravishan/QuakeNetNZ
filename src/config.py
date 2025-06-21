@@ -27,12 +27,13 @@ class Config:
     def __init__(self):
         
         #set program mode
-        self.MODE               = MODE_TYPE.ALL
+        self.MODE               = MODE_TYPE.SPLIT_DATA
         self.MODEL_TYPE         = MODEL_TYPE.CNN
         # File paths
         #self.ORIGINAL_DB_FILE   = "data/waveforms_13_24.hdf5"
         #self.ORIGINAL_DB_FILE   = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
-        self.ORIGINAL_DB_FILE   = "/home/00/22008603/work/data_backup/geonet_data/waveforms_60s.hdf5"
+        self.ORIGINAL_DB_FILE   = "/Users/user/Desktop/work/new_repo/GeoNetDataset/data/waveforms_13_25_all_components.hdf5"
+        
         
         #self.ORIGINAL_DB_FILE  = "data/waveforms_new.hdf5"
         self.METADATA_PATH      = "data/metadata.csv"
@@ -47,10 +48,10 @@ class Config:
         self.TRAINING_WINDOW        = 2 # in seconds
         self.BASE_SAMPLING_RATE     = 50
         self.SHIFT_WINDOW           = 10
-        self.DATA_EXTRACTED_FILE    = f"data/waveform_2s_p_data_50hz.hdf5"
+        self.DATA_EXTRACTED_FILE    = f"data/waveform_2s_p_data_50hz_all.hdf5"
         
-        self.TEST_DATA              = "data/test_data_13_24_p_50hz"
-        self.TRAIN_DATA             = "data/train_data_13_24_p_50hz"
+        self.TEST_DATA              = "data/test_data_13_24_p_50hz_all"
+        self.TRAIN_DATA             = "data/train_data_13_24_p_50hz_all"
 
         # Improve the verbosity
         self.ENABLE_PRINT           = 0

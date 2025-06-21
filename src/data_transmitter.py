@@ -8,7 +8,7 @@ from database_op import *
 
 ## Network Initialisation
 #PI_IP = '192.168.1.8'
-PI_IP = '192.168.1.4'
+PI_IP = '192.168.1.6'
 PORT = 65432
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((PI_IP, PORT))
@@ -21,15 +21,15 @@ client.connect((PI_IP, PORT))
 #     time.sleep(0.1)  # simulate real-time streaming
 
 cfg = Config()
-hdf5_file = "/Users/user/Library/CloudStorage/OneDrive-MasseyUniversity/Technical-Work/databackup/waveforms.hdf5"
+hdf5_file = "data/waveforms_13_24.hdf5"
 
 # Model parameters
 window_size = 1 
 stride = 1
 
 with h5py.File(hdf5_file, 'r') as hdf:
-    for event_id in hdf.keys():  # Iterate over event IDs
-        dataset = hdf.get(event_id)
+    for event_id in hdf["data"].keys():  # Iterate over event IDs
+        dataset = hdf["data"].get(event_id)
         if dataset is None:
             continue
         

@@ -454,7 +454,7 @@ def merge_new_data(file_path, cfg=None):
 
 def extract_p_data_for_new_data(cfg=None):
 
-    print("Extracting data from the 90  geonet database")
+    print("Extracting P data from the 90  geonet database")
     if cfg is None:
         cfg = Config()
 
@@ -483,8 +483,14 @@ def extract_p_data_for_new_data(cfg=None):
         
         for event_id in hdf5_file["data"].keys():  # Directly iterate over the keys in the HDF5 file
 
+            if "2016p858000" in event_id:
+                continue  # Exclude Kaikoura earthquake events
+    
             dataset = hdf5_file["data"].get(event_id)
             data = np.array(dataset)
+
+            if data.shape[1] <= 50:
+                continue
 
             p_arrival_sample = dataset.attrs.get("p_arrival_sample", None)
             if p_arrival_sample is None or str(p_arrival_sample).strip() == "" or str(p_arrival_sample).lower() == "nan":
